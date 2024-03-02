@@ -1,5 +1,9 @@
 FROM python:3.12
 WORKDIR /app
+ARG SSH_PRIVATE_KEY
+RUN mkdir /root/.ssh/ && echo "${SSH_PRIVATE_KEY}" >> /root/.ssh/id_rsa
+RUN chmod 400 /root/.ssh/id_rsa && ssh-keyscan github.com >> /root/.ssh/known_hosts
+
 COPY requirements.txt .
 RUN pip install -r requirements.txt --src /usr/local/src
 
