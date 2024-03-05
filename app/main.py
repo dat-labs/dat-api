@@ -1,7 +1,9 @@
 from fastapi import Depends, FastAPI
 from .dependencies import get_query_token, get_token_header
 from .internal import admin
-from .routers import connections, sources, generators, destinations
+from .routers import (connections, 
+                    #   sources, generators, destinations,
+                      actors, actor_instances,)
 # from pydantic import BaseModel
 
 app = FastAPI(
@@ -10,9 +12,11 @@ app = FastAPI(
 
 # app.include_router(admin.router)
 app.include_router(connections.router)
-app.include_router(sources.router)
-app.include_router(generators.router)
-app.include_router(destinations.router)
+# app.include_router(sources.router)
+# app.include_router(generators.router)
+# app.include_router(destinations.router)
+app.include_router(actors.router)
+app.include_router(actor_instances.router)
 app.include_router(
     admin.router,
     prefix="/admin",
