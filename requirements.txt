@@ -1,3 +1,4 @@
 git+ssh://git@github.com/riju-dc/dat-core.git@feature/base-classes#egg=dat_core
+celery
 fastapi
 uvicorn[standard]
