@@ -1,7 +1,10 @@
 from uuid import uuid4
+from celery import Celery
 from fastapi import APIRouter, Depends, HTTPException
 
 from ..dependencies import get_token_header
+
+app = Celery('tasks', broker='amqp://mq_user:mq_pass@message-queue:5672//')
 
 router = APIRouter(
     prefix="/connections",
@@ -54,10 +57,12 @@ async def update_connection(connection_id: int):
     return {"connection_id": connection_id, "name": "The great Plumbus"}
 
 
-@router.post("/{connection_id}/runs")
-async def trigger_run_on_connection(connection_id: int):
+@router.post("/{connection_id}/run")
+async def connection_trigger_run(connection_id: int):
     if connection_id not in fake_connections_db:
         raise HTTPException(status_code=404, detail="connection not found")
+    app.send_task('dat_worker_task', (open(
+        'connection.json').read(), ), queue='dat-worker-q')
     return {"name": fake_connections_db[connection_id]["name"], "connection_id": connection_id}
 
 
