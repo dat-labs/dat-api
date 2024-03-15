@@ -1,3 +1,4 @@
+import json
 from uuid import uuid4
 from celery import Celery
 from fastapi import APIRouter, Depends, HTTPException
@@ -59,11 +60,11 @@ async def update_connection(connection_id: int):
 
 @router.post("/{connection_id}/run")
 async def connection_trigger_run(connection_id: int):
-    if connection_id not in fake_connections_db:
-        raise HTTPException(status_code=404, detail="connection not found")
+    # if connection_id not in fake_connections_db:
+    #     raise HTTPException(status_code=404, detail="connection not found")
     app.send_task('dat_worker_task', (open(
         'connection.json').read(), ), queue='dat-worker-q')
-    return {"name": fake_connections_db[connection_id]["name"], "connection_id": connection_id}
+    return json.loads(open('connection.json').read())
 
 
 @router.get("/{connection_id}/runs")
