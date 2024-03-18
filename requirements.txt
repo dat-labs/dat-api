@@ -1,4 +1,6 @@
-git+ssh://git@github.com/riju-dc/dat-core.git@feature/base-classes#egg=dat_core
+# git+ssh://git@github.com/riju-dc/dat-core.git@feature/base-classes#egg=dat_core
+git+ssh://git@github.com/dc-rahul/verified-sources.git@feature/google-drive-and-wikipedia-forked#egg=verified_sources
+git+ssh://git@github.com/riju-dc/verified-generators.git@feature/openai-embeddings-and-sentence-transformers#egg=verified_generators
 celery
 fastapi
 uvicorn[standard]
@@ -6,3 +8,7 @@ uvicorn[standard]
 
 psycopg2-binary
 sqlalchemy
+
+# !! IMPORTANT !! TODO
+# Below dependencies are temporary, till we figure out how to install dependencies automagically
+lxml
