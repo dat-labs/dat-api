@@ -4,12 +4,12 @@ from fastapi import (APIRouter,
                      #  Depends,
                      HTTPException)
 from pydantic import BaseModel
-
+from importlib import import_module
 from dat_core.pydantic_models.connector_specification import ConnectorSpecification
+from dat_core.pydantic_models.dat_catalog import DatCatalog
 from dat_core.pydantic_models.configured_document_stream import ConfiguredDocumentStream
 from dat_core.db_models.workspaces import Workspace
 from dat_core.db_models.actor_instances import ActorInstance as ActorInstanceModel
-# from ..dependencies import get_token_header
 
 
 from sqlalchemy.orm import relationship
@@ -116,6 +116,18 @@ async def delete_actor_instance(actor_instance_uuid: str) -> dict:
 
 
 @router.get("/{actor_instance_uuid}/discover")
-async def call_actor_instance_discover(actor_slug: str):
-    """Initialize actor obj from verified-actors repo and call discover() on it and return"""
-    return {}
+async def call_actor_instance_discover(actor_instance_uuid: str):
+    """Initialize actor obj from verified-actors repo and call discover() on it and return
+    
+    curl -X 'GET' \
+    'http://localhost:8000/actor_instances/c6713b9d-0b97-4903-8982-4c80132f4a21/discover' \
+    -H 'accept: application/json' \
+    -H 'Content-Type: application/json'
+    """
+    db = list(get_db())[0]
+    actor_instance = db.query(ActorInstanceModel).get(actor_instance_uuid)
+    connector_specification = ConnectorSpecification(**actor_instance.configuration)
+    SourceClass = getattr(
+        import_module(f'verified_sources.{actor_instance.actor.name.lower()}.source'), connector_specification.name)
+    catalog = SourceClass().discover(config=connector_specification)
+    return catalog
