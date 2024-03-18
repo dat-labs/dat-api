@@ -1,6 +1,7 @@
+import json
 from uuid import uuid4
 from fastapi import (APIRouter,
-                    #  Depends,
+                     #  Depends,
                      HTTPException)
 from pydantic import BaseModel
 
@@ -22,10 +23,10 @@ Base = declarative_base()
 class ActorInstance(BaseModel):
     uuid: str = str(uuid4())
     name: str
-    workspace_id: str = 'wkspc-uuid'
-    actor_id: str = 'gdrive-uuid'
-    user_id: str = 'user-uuid'
-    connector_specification: ConnectorSpecification
+    workspace_id: str = 'wkspc-uuid'            # setting defaults
+    actor_id: str = 'gdrive-uuid'               # will remove them
+    user_id: str = 'user-uuid'                  # later
+    configuration: ConnectorSpecification
 
 
 router = APIRouter(
@@ -41,29 +42,37 @@ actor_instances_db = []
 
 
 @router.get("/{actor_type}/list")
-async def fetch_available_actor_instances(actor_type: str) -> list[ConnectorSpecification]:
-    return actor_instances_db
+async def fetch_available_actor_instances(actor_type: str) -> list[ActorInstance]:
+    db = list(get_db())[0]
+    aai = db.query(ActorInstanceModel).filter_by(actor_type=actor_type).all()
+    if not aai:
+        raise HTTPException(
+            status_code=404, detail=f"No actor instances with actor_type: {actor_type} found")
+    return aai
 
 
 @router.get("/{actor_instance_uuid}")
-async def read_actor_instance(actor_instance_uuid: str) -> ConnectorSpecification:
-    """Will be populated from manifest file in verified-actor_instances repo"""
-    return actor_instances_db[0]
+async def read_actor_instance(actor_instance_uuid: str) -> ActorInstance:
+    db = list(get_db())[0]
+    ai = db.query(ActorInstanceModel).get(actor_instance_uuid)
+    if not ai:
+        raise HTTPException(
+            status_code=404, detail=f'Actor instances with id: {actor_instance_uuid} NOT found')
+    return ai
 
 
 @router.post("/",
-    responses={403: {"description": "Operation forbidden"}},
-)
+             responses={403: {"description": "Operation forbidden"}},
+             )
 async def create_actor_instance(actor_instance: ActorInstance) -> ActorInstance:
     actor_instance_dct = {
-        # 'id': str(uuid4()),
         'id': actor_instance.uuid,
         'workspace_id': actor_instance.workspace_id,
         'actor_id': actor_instance.actor_id,
         'user_id': actor_instance.user_id,
         'name': actor_instance.name,
         'actor_type': 'source',
-        'configuration': actor_instance.connector_specification.model_dump_json(),
+        'configuration': json.loads(actor_instance.configuration.model_dump_json()),
     }
     try:
         db = list(get_db())[0]
@@ -78,14 +87,13 @@ async def create_actor_instance(actor_instance: ActorInstance) -> ActorInstance:
         raise HTTPException(status_code=403, detail="Operation forbidden")
     # actor_instances_db.append(ActorInstance(
     #     uuid=, connector_specification=connector_specification))
-    
 
 
 @router.put(
     "/{actor_instance_uuid}",
     responses={403: {"description": "Operation forbidden"}},
 )
-async def update_actor_instance(actor_instance_uuid:str, 
+async def update_actor_instance(actor_instance_uuid: str,
                                 conn_spec: ConnectorSpecification,
                                 configured_document_stream: ConfiguredDocumentStream) -> list[ActorInstance]:
     for idx in range(len(actor_instances_db)):
@@ -96,12 +104,15 @@ async def update_actor_instance(actor_instance_uuid:str,
             uuid=str(uuid4()), connector_specification=conn_spec)
     return actor_instances_db
 
-@router.delete(
-    "/{actor_instance_uuid}",
+
+@router.delete("/{actor_instance_uuid}",
     responses={403: {"description": "Operation forbidden"}},
 )
-async def delete_actor_instance(actor_instance_uuid: str) -> list[ActorInstance]:
-    return {}
+async def delete_actor_instance(actor_instance_uuid: str) -> dict:
+    db = list(get_db())[0]
+    db.query(ActorInstanceModel).filter_by(id=actor_instance_uuid).delete()
+    db.commit()
+    return {'msg': f'actor instance with id: {actor_instance_uuid} DELETED'}
 
 
 @router.get("/{actor_instance_uuid}/discover")
