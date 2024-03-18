@@ -9,10 +9,11 @@ from fastapi import (APIRouter,
 from pydantic import BaseModel
 
 from dat_core.pydantic_models.connector_specification import ConnectorSpecification
+from dat_core.db_models.actors import Actor as ActorModel
 # from ..dependencies import get_token_header
 
 from ..database import Base, get_db
-from ..models import Actor as ActorModel
+# from ..models import Actor as ActorModel
 
 
 class ActorInstance(BaseModel):

@@ -6,6 +6,8 @@ from pydantic import BaseModel
 
 from dat_core.pydantic_models.connector_specification import ConnectorSpecification
 from dat_core.pydantic_models.configured_document_stream import ConfiguredDocumentStream
+from dat_core.db_models.workspaces import Workspace
+from dat_core.db_models.actor_instances import ActorInstance as ActorInstanceModel
 # from ..dependencies import get_token_header
 
 
@@ -13,7 +15,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
 from ..database import Base, get_db
-from ..models import Workspace, ActorInstance as ActorInstanceModel
+# from ..models import ActorInstance as ActorInstanceModel
 
 Base = declarative_base()
 
