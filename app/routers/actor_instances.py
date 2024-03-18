@@ -15,14 +15,16 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
 from ..database import Base, get_db
-# from ..models import ActorInstance as ActorInstanceModel
 
 Base = declarative_base()
 
 
-
 class ActorInstance(BaseModel):
-    uuid: str
+    uuid: str = str(uuid4())
+    name: str
+    workspace_id: str = 'wkspc-uuid'
+    actor_id: str = 'gdrive-uuid'
+    user_id: str = 'user-uuid'
     connector_specification: ConnectorSpecification
 
 
@@ -50,25 +52,27 @@ async def read_actor_instance(actor_instance_uuid: str) -> ConnectorSpecificatio
 
 
 @router.post("/",
-    # responses={403: {"description": "Operation forbidden"}},
+    responses={403: {"description": "Operation forbidden"}},
 )
-async def create_actor_instance(name: str, connector_specification: ConnectorSpecification) -> ActorInstance:
-    actor_instance = {
-        'id': str(uuid4()),
-        'workspace_id': 'uuid',
-        'actor_id': 'uuid',
-        'user_id': 'uuid',
-        'name': name,
+async def create_actor_instance(actor_instance: ActorInstance) -> ActorInstance:
+    actor_instance_dct = {
+        # 'id': str(uuid4()),
+        'id': actor_instance.uuid,
+        'workspace_id': actor_instance.workspace_id,
+        'actor_id': actor_instance.actor_id,
+        'user_id': actor_instance.user_id,
+        'name': actor_instance.name,
         'actor_type': 'source',
-        'configuration': connector_specification.model_dump_json(),
+        'configuration': actor_instance.connector_specification.model_dump_json(),
     }
     try:
         db = list(get_db())[0]
-        db_actor_instance = ActorInstanceModel(**actor_instance)
+        db_actor_instance = ActorInstanceModel(**actor_instance_dct)
         db.add(db_actor_instance)
         db.commit()
         db.refresh(db_actor_instance)
-        return ActorInstance(uuid=actor_instance['id'], connector_specification=connector_specification).model_dump_json()
+        # return {1: 2}
+        return actor_instance
     except Exception as e:
         raise
         raise HTTPException(status_code=403, detail="Operation forbidden")
