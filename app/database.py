@@ -3,7 +3,7 @@ from sqlalchemy.orm import sessionmaker
 
 
 # Assuming you have defined your database URL
-DATABASE_URL = "postgresql://root:root@localhost/dat_backend"
+DATABASE_URL = "postgresql://root:root@db-backend/dat_backend"
 
 # Create the engine
 engine = create_engine(DATABASE_URL)

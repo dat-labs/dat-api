@@ -8,14 +8,14 @@ from importlib import import_module
 from dat_core.pydantic_models.connector_specification import ConnectorSpecification
 from dat_core.pydantic_models.dat_catalog import DatCatalog
 from dat_core.pydantic_models.configured_document_stream import ConfiguredDocumentStream
-from dat_core.db_models.workspaces import Workspace
-from dat_core.db_models.actor_instances import ActorInstance as ActorInstanceModel
+from ..db_models.workspaces import Workspace
+from ..db_models.actor_instances import ActorInstance as ActorInstanceModel
 
 
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
-from ..database import Base, get_db
+from ..database import get_db
 
 Base = declarative_base()
 

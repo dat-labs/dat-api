@@ -5,12 +5,12 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any
 from importlib import import_module
-from dat_core.db_models.connections import Connection as ConnectionInstanceModel
+from ..db_models.connections import Connection as ConnectionInstanceModel
 
 
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
-from ..database import Base, get_db
+from ..database import get_db
 
 
 app = Celery('tasks', broker='amqp://mq_user:mq_pass@message-queue:5672//')
