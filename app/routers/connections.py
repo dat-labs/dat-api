@@ -1,29 +1,54 @@
-import json
-from uuid import uuid4
-from celery import Celery
 from fastapi import APIRouter, HTTPException
+from typing import Optional
 from pydantic import BaseModel
-from typing import Dict, Any
-from importlib import import_module
-from ..db_models.connections import Connection as ConnectionInstanceModel
-
-
-from sqlalchemy.ext.declarative import declarative_base
-from datetime import datetime
+from ..db_models.connections import (
+    Connection as ConnectionInstanceModel)
 from ..database import get_db
 
 
-app = Celery('tasks', broker='amqp://mq_user:mq_pass@message-queue:5672//')
+class ConnectionRequestInstance(BaseModel):
+    name: Optional[str] = None
+    source_instance_id: str
+    generator_instance_id: str
+    destination_instance_id: str
+    configuration: Optional[dict] = None
+    catalog: Optional[dict] = None
+    cron_string: Optional[str] = None
+    status: Optional[str] = None
+
+
+class ConnectionResponseInstance(BaseModel):
+    id: str
+    name: str
+    source_instance_id: str
+    generator_instance_id: str
+    destination_instance_id: str
+    configuration: Optional[dict] = None
+    catalog: Optional[dict] = None
+    cron_string: Optional[str] = None
+    status: str
+
 
 router = APIRouter(
     prefix="/connections",
     tags=["connections"],
-    # dependencies=[Depends(get_token_header)],
     responses={404: {"description": "Not found"}},
 )
 
-@router.get("/{connection_id}/list")
-async def read_connection(connection_id: str):
+@router.get("/list/",
+            response_model=list[ConnectionResponseInstance])
+async def fetch_available_connections(
+) -> list[ConnectionResponseInstance]:
+    db = list(get_db())[0]
+    connections = db.query(ConnectionInstanceModel).all()
+    return connections
+
+
+@router.get("/{connection_id}/",
+            response_model=ConnectionResponseInstance)
+async def read_connection(
+    connection_id: str
+) -> ConnectionResponseInstance:
     db = list(get_db())[0]
     connection = db.query(ConnectionInstanceModel).get(connection_id)
     if connection is None:
@@ -31,25 +56,15 @@ async def read_connection(connection_id: str):
     return connection
 
 
-@router.post("/", 
-            responses={403: {"description": "Operation forbidden"}},)
-async def create_connection(payload: Dict[str, Any]):
-    src_actor_instance_id = payload['src_actor_instance_id']
-    gen_actor_instance_id = payload['gen_actor_instance_id']
-    dst_actor_instance_id = payload['dst_actor_instance_id']
-
-    connection_instance_dct = {
-        'source_instance_id': src_actor_instance_id,
-        'generator_instance_id': gen_actor_instance_id,
-        'destination_instance_id': dst_actor_instance_id,
-        'name': 'Gdrive to Qdrant',
-        'configuration': {"src_actor_instance_id": src_actor_instance_id,
-                          "gen_actor_instance_id": gen_actor_instance_id,
-                          "dst_actor_instance_id": dst_actor_instance_id}
-    }   
+@router.post("/",
+             responses={403: {"description": "Operation forbidden"}},
+             response_model=ConnectionResponseInstance)
+async def create_connection(
+    payload: ConnectionRequestInstance
+) -> ConnectionResponseInstance:
     try:
         db = list(get_db())[0]
-        connection_instance = ConnectionInstanceModel(**connection_instance_dct)
+        connection_instance = ConnectionInstanceModel(**payload.model_dump())
         db.add(connection_instance)
         db.commit()
         db.refresh(connection_instance)
@@ -57,32 +72,67 @@ async def create_connection(payload: Dict[str, Any]):
     except Exception as e:
         raise HTTPException(status_code=403, detail=str(e))
 
-@router.put(
-    "/{connection_id}",
-    responses={403: {"description": "Operation forbidden"}},
-)
-async def update_connection(connection_id: int):
-    if connection_id != "plumbus":
-        raise HTTPException(
-            status_code=403, detail="You can only update the connection: plumbus"
-        )
-    return {"connection_id": connection_id, "name": "The great Plumbus"}
+
+@router.put("/{connection_id}",
+            responses={403: {"description": "Operation forbidden"}},
+            response_model=ConnectionResponseInstance)
+async def update_connection(
+    connection_id: str,
+    payload: ConnectionRequestInstance
+) -> ConnectionResponseInstance:
+    db = list(get_db())[0]
+    try:
+        connection_instance = db.query(ConnectionInstanceModel).get(connection_id)
+        if connection_instance is None:
+            raise HTTPException(status_code=404, detail="Connection not found")
+
+        for key, value in payload.items():
+            setattr(connection_instance, key, value)
+
+        db.add(connection_instance)
+        db.commit()
+        db.refresh(connection_instance)
+
+        return connection_instance
+    except Exception as e:
+        raise HTTPException(status_code=403, detail=str(e))
 
 
-@router.post("/{connection_id}/run")
-async def connection_trigger_run(connection_id: int):
-    # if connection_id not in fake_connections_db:
-    #     raise HTTPException(status_code=404, detail="connection not found")
-    app.send_task('dat_worker_task', (open(
-        'connection.json').read(), ), queue='dat-worker-q')
-    return json.loads(open('connection.json').read())
+@router.delete("/{connection_id}",
+               responses={404: {"description": "Connection not found"}},
+               status_code=204)
+async def delete_connection(
+    connection_id: str
+) -> None:
+    db = list(get_db())[0]
+    try:
+        # Retrieve the connection instance
+        connection_instance = db.query(ConnectionInstanceModel).get(connection_id)
+        if connection_instance is None:
+            raise HTTPException(status_code=404, detail="Connection not found")
+
+        # Delete the connection instance
+        db.delete(connection_instance)
+        db.commit()
+
+        return None
+    except Exception as e:
+        raise HTTPException(status_code=403, detail=str(e))
+
+# @router.post("/{connection_id}/run")
+# async def connection_trigger_run(connection_id: int):
+#     # if connection_id not in fake_connections_db:
+#     #     raise HTTPException(status_code=404, detail="connection not found")
+#     app.send_task('dat_worker_task', (open(
+#         'connection.json').read(), ), queue='dat-worker-q')
+#     return json.loads(open('connection.json').read())
 
 
-@router.get("/{connection_id}/runs")
-async def get_connection_runs():
-    return fake_connections_db
+# @router.get("/{connection_id}/runs")
+# async def get_connection_runs():
+#     return fake_connections_db
 
 
-@router.get("/{connection_id}/runs/{run_id}")
-async def get_connection_runs_by_run_id():
-    return fake_connections_db
+# @router.get("/{connection_id}/runs/{run_id}")
+# async def get_connection_runs_by_run_id():
+#     return fake_connections_db

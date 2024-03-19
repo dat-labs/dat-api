@@ -8,7 +8,8 @@ from app.db_models.actor_instances import ActorInstance
 class Workspace(Base):
     __tablename__ = 'workspaces'
 
-    id = Column(String(36), primary_key=True)
+    id = Column(String(36), primary_key=True,
+                   nullable=False, server_default="uuid_generate_v4()")
     name = Column(String(50), nullable=False)
     # Assuming it's a string, change data type if necessary
     status = Column(String(50))

@@ -7,7 +7,7 @@ from .routers import (connections,
 # from pydantic import BaseModel
 
 app = FastAPI(
-    # dependencies=[Depends(get_query_token)]
+    # dependencies=[Depends(get_token_header)]
 )
 
 # app.include_router(admin.router)
