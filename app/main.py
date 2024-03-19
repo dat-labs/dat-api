@@ -1,14 +1,26 @@
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request, HTTPException
 from .dependencies import get_query_token, get_token_header
 from .internal import admin
 from .routers import (connections, 
                     #   sources, generators, destinations,
                       actors, actor_instances, users)
+from .common.exceptions.exceptions import NotFound, Unauthorized
 # from pydantic import BaseModel
 
 app = FastAPI(
     # dependencies=[Depends(get_query_token)]
 )
+
+@app.exception_handler(NotFound)
+async def not_found_exception_handler(request: Request, exc: NotFound):
+    raise HTTPException(
+            status_code=exc.status_code, detail=exc.to_dict())
+    
+@app.exception_handler(Unauthorized)
+async def unauthorized_exception_handler(request: Request, exc: Unauthorized):
+    raise HTTPException(
+            status_code=exc.status_code, detail=exc.to_dict())
+
 
 # app.include_router(admin.router)
 app.include_router(connections.router)

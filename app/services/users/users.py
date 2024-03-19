@@ -1,6 +1,6 @@
 import bcrypt
 from ...db_models.users import User as UserModel
-from fastapi import (HTTPException)
+from ...common.exceptions.exceptions import NotFound, Unauthorized
 
 class Users():
     """
@@ -28,11 +28,12 @@ class Users():
         - dict or None: Dictionary containing user information if credentials are valid.
         
         Raises:
-        - HTTPException: If user is not found.
+        - NotFound: If user is not found.
+        - Unauthorized: If user email and password do not match
         """
         user = self.db_session.query(UserModel).filter(UserModel.email == email).first()
         if user:
             if bcrypt.checkpw(password.encode('utf-8'), user.password_hash.encode('utf-8')):
                 return user
-            raise HTTPException(status_code=401, detail="Email and Password do not match")
-        raise HTTPException(status_code=404, detail="User Not Found")
+            raise Unauthorized("Email and Password do not match")
+        raise NotFound("User Not Found")
