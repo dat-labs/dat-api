@@ -1,7 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-
 # Assuming you have defined your database URL
 DATABASE_URL = "postgresql://root:root@db-backend/dat_backend"
 
@@ -14,6 +13,8 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 def get_db():
     db = SessionLocal()
     try:
+        print("yeilding database session")
         yield db
     finally:
+        print("closing db session")
         db.close()
