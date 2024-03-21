@@ -7,7 +7,7 @@ from ..database import get_db
 
 
 class ConnectionRequestInstance(BaseModel):
-    name: Optional[str] = None
+    name: str
     source_instance_id: str
     generator_instance_id: str
     destination_instance_id: str
