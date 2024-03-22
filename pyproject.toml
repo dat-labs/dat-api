@@ -2,7 +2,7 @@
 name = "dat-api"
 version = "0.1.0"
 description = "Unified API for dat ops"
-authors = ["Rijumone Choudhuri <mailmeonriju@gmail.com>"]
+authors = ["Team <team@datlabs.com>"]
 license = "MIT"
 readme = "README.md"
 
