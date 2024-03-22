@@ -24,8 +24,8 @@ class ActorInstance(BaseModel):
     uuid: str = str(uuid4())
     name: str
     workspace_id: str = 'wkspc-uuid'            # setting defaults
-    actor_id: str = 'gdrive-uuid'               # will remove them
-    user_id: str = 'user-uuid'                  # later
+    actor_id: str = 'gdrive-uuid'               # TODO will remove them
+    user_id: str = '09922bd9-7872-4664-99d0-08eae42fb554'                  # later
     configuration: ConnectorSpecification
 
 
@@ -72,6 +72,7 @@ async def create_actor_instance(actor_instance: ActorInstance) -> ActorInstance:
         'user_id': actor_instance.user_id,
         'name': actor_instance.name,
         'actor_type': 'source',
+        'status': 'active', # TODO why is this needed here? Why does the db complaint? Even if it is set to server_default
         'configuration': json.loads(actor_instance.configuration.model_dump_json()),
     }
     try:

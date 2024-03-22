@@ -1,9 +1,11 @@
 from fastapi import Depends, FastAPI, Request, HTTPException
-from .dependencies import get_query_token, get_token_header
+# from .dependencies import get_query_token, get_token_header
 from .internal import admin
 from .routers import (connections, 
                     #   sources, generators, destinations,
-                      actors, actor_instances, users)
+                      actors, actor_instances, users,
+                      connection_run_logs,
+                      )
 from .common.exceptions.exceptions import NotFound, Unauthorized
 # from pydantic import BaseModel
 
@@ -29,6 +31,7 @@ app.include_router(connections.router)
 # app.include_router(destinations.router)
 app.include_router(actors.router)
 app.include_router(actor_instances.router)
+app.include_router(connection_run_logs.router)
 app.include_router(users.router)
 app.include_router(
     admin.router,
