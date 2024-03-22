@@ -10,6 +10,14 @@ readme = "README.md"
 python = "^3.10"
 pyjwt = "^2.8.0"
 bcrypt = "^4.1.2"
+verified-sources = {git = "ssh://git@github.com/dc-rahul/verified-sources", rev = "feature/google-drive-and-wikipedia-forked"}
+verified-generators = {git = "ssh://git@github.com/riju-dc/verified-generators", rev = "feature/openai-embeddings-and-sentence-transformers"}
+verified-destinations = {git = "ssh://git@github.com/ankit-dc/verified-destinations", rev = "feature/pinecone-qdrant-and-mysql"}
+celery = "^5.3.6"
+fastapi = "^0.110.0"
+sqlalchemy = "^2.0.28"
+psycopg2-binary = "^2.9.9"
+uvicorn = {extras = ["standard"], version = "^0.29.0"}
 
 
 [build-system]
