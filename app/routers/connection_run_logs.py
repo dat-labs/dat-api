@@ -21,7 +21,7 @@ class DatLogMessageRequest(BaseModel):
 
 
 router = APIRouter(
-    prefix="/connection_run_logs",
+    prefix="/connection-run-logs",
     tags=["connection_run_logs"],
     # dependencies=[Depends(get_token_header)],
     responses={404: {"description": "Not found"}},
