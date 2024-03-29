@@ -1,6 +1,6 @@
-from fastapi import Depends, FastAPI, Request, HTTPException
+from fastapi import Depends, FastAPI, Request, HTTPException, APIRouter
 # from .dependencies import get_query_token, get_token_header
-from .internal import admin
+from .internal import admin, connections as connections_internal
 from .routers import (connections, 
                     #   sources, generators, destinations,
                       actors, actor_instances, users,
@@ -23,6 +23,11 @@ async def unauthorized_exception_handler(request: Request, exc: Unauthorized):
     raise HTTPException(
             status_code=exc.status_code, detail=exc.to_dict())
 
+# base_router = APIRouter(
+#     prefix="/workspaces/{workspace_id}",
+# )
+# base_router.include_router(connections.router)
+# app.include_router(base_router)
 
 # app.include_router(admin.router)
 app.include_router(connections.router)
@@ -40,7 +45,10 @@ app.include_router(
     # dependencies=[Depends(get_token_header)],
     # responses={418: {"description": "I'm a teapot"}},
 )
-
+app.include_router(
+    connections_internal.router,
+    prefix="/internal"
+)
 
 @app.get("/")
 async def root():

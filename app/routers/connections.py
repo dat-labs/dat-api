@@ -1,32 +1,13 @@
 from fastapi import APIRouter, HTTPException
-from typing import Optional
-from pydantic import BaseModel
 from ..db_models.connections import (
-    Connection as ConnectionInstanceModel)
+    Connection as ConnectionModel
+)
 from ..database import get_db
-
-
-class ConnectionRequestInstance(BaseModel):
-    name: str
-    source_instance_id: str
-    generator_instance_id: str
-    destination_instance_id: str
-    configuration: Optional[dict] = None
-    catalog: Optional[dict] = None
-    cron_string: Optional[str] = None
-    status: Optional[str] = None
-
-
-class ConnectionResponseInstance(BaseModel):
-    id: str
-    name: str
-    source_instance_id: str
-    generator_instance_id: str
-    destination_instance_id: str
-    configuration: Optional[dict] = None
-    catalog: Optional[dict] = None
-    cron_string: Optional[str] = None
-    status: str
+from ..common.utils import CustomModel
+from ..models.connection_model import (
+    ConnectionResponse, ConnectionPostRequest,
+    ConnectionPutRequest
+)
 
 
 router = APIRouter(
@@ -35,36 +16,42 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@router.get("/list/",
-            response_model=list[ConnectionResponseInstance])
+
+@router.get("/list",
+            response_model=list[ConnectionResponse],
+            description="Fetch all active connections")
 async def fetch_available_connections(
-) -> list[ConnectionResponseInstance]:
+) -> list[ConnectionResponse]:
     db = list(get_db())[0]
-    connections = db.query(ConnectionInstanceModel).all()
+
+    connections = db.query(ConnectionModel).filter_by(status='active').all()
     return connections
 
 
-@router.get("/{connection_id}/",
-            response_model=ConnectionResponseInstance)
+@router.get("/{connection_id}",
+            response_model=ConnectionResponse)
 async def read_connection(
     connection_id: str
-) -> ConnectionResponseInstance:
+) -> ConnectionResponse:
     db = list(get_db())[0]
-    connection = db.query(ConnectionInstanceModel).get(connection_id)
+    connection = db.query(ConnectionModel).get(connection_id)
     if connection is None:
         raise HTTPException(status_code=404, detail="Connection not found")
     return connection
 
 
-@router.post("/",
+@router.post("",
              responses={403: {"description": "Operation forbidden"}},
-             response_model=ConnectionResponseInstance)
+             response_model=ConnectionResponse)
 async def create_connection(
-    payload: ConnectionRequestInstance
-) -> ConnectionResponseInstance:
+    payload: ConnectionPostRequest
+) -> ConnectionResponse:
     try:
         db = list(get_db())[0]
-        connection_instance = ConnectionInstanceModel(**payload.model_dump())
+        connection_instance = ConnectionModel(
+            **payload.model_dump(exclude={'catalog'}),
+            catalog=CustomModel.convert_enums_to_str(payload.catalog.model_dump())
+        )
         db.add(connection_instance)
         db.commit()
         db.refresh(connection_instance)
@@ -75,18 +62,19 @@ async def create_connection(
 
 @router.put("/{connection_id}",
             responses={403: {"description": "Operation forbidden"}},
-            response_model=ConnectionResponseInstance)
+            response_model=ConnectionResponse)
 async def update_connection(
     connection_id: str,
-    payload: ConnectionRequestInstance
-) -> ConnectionResponseInstance:
+    payload: ConnectionPutRequest
+) -> ConnectionResponse:
     db = list(get_db())[0]
     try:
-        connection_instance = db.query(ConnectionInstanceModel).get(connection_id)
+        connection_instance = db.query(ConnectionModel).get(connection_id)
         if connection_instance is None:
             raise HTTPException(status_code=404, detail="Connection not found")
 
-        for key, value in payload.items():
+        print(payload.model_dump(exclude_unset=True))
+        for key, value in payload.model_dump(exclude_unset=True).items():
             setattr(connection_instance, key, value)
 
         db.add(connection_instance)
@@ -106,12 +94,10 @@ async def delete_connection(
 ) -> None:
     db = list(get_db())[0]
     try:
-        # Retrieve the connection instance
-        connection_instance = db.query(ConnectionInstanceModel).get(connection_id)
+        connection_instance = db.query(ConnectionModel).get(connection_id)
         if connection_instance is None:
             raise HTTPException(status_code=404, detail="Connection not found")
 
-        # Delete the connection instance
         db.delete(connection_instance)
         db.commit()
 
