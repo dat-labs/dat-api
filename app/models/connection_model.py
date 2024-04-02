@@ -1,7 +1,7 @@
 from typing import Dict, Optional
 from pydantic import BaseModel
 from dat_core.pydantic_models import (
-    ConfiguredDatCatalog,
+    DatCatalog,
     Connection as ConnectionPdModel
 )
 
@@ -22,7 +22,7 @@ class ConnectionBase(BaseModel):
     namespace_format: str = "${SOURCE_NAMESPACE}"
     prefix: Optional[str] = None
     configuration: Optional[Dict] = None
-    catalog: Optional[ConfiguredDatCatalog] = None
+    catalog: Optional[DatCatalog] = None
     schedule: Optional[Schedule] = None
     schedule_type: Optional[str] = "manual"
     status: Optional[str] = "active"
@@ -39,7 +39,7 @@ class ConnectionPutRequest(BaseModel):
     namespace_format: Optional[str] = None
     prefix: Optional[str] = None
     configuration: Optional[Dict] = None
-    catalog: Optional[ConfiguredDatCatalog] = None
+    catalog: Optional[DatCatalog] = None
     schedule: Optional[Schedule] = None
     schedule_type: Optional[str] = None
     status: Optional[str] = None

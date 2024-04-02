@@ -37,7 +37,7 @@ router = APIRouter(
 )
 
 
-actor_instances_db = [{"name": "Wikipedia", "connectionSpecification": {}}]
+actor_instances_db = [{"name": "Wikipedia", "connection_specification": {}}]
 actor_instances_db = []
 
 

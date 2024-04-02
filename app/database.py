@@ -13,7 +13,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 def get_db():
     db = SessionLocal()
     try:
-        print("yeilding database session")
+        print("yielding database session")
         yield db
     finally:
         print("closing db session")
