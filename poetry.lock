@@ -463,7 +463,7 @@ pyyaml = "^6.0.1"
 type = "git"
 url = "ssh://git@github.com/riju-dc/dat-core"
 reference = "feature/base-classes"
-resolved_reference = "6a9b7e4d2e1ed780edbc23f68e4d57dc54a3e72e"
+resolved_reference = "85237ef5b034c29fda4ce3fcade1984f869dae91"
 
 [[package]]
 name = "distro"
@@ -492,18 +492,18 @@ test = ["pytest (>=6)"]
 
 [[package]]
 name = "fastapi"
-version = "0.110.0"
+version = "0.110.1"
 description = "FastAPI framework, high performance, easy to learn, fast to code, ready for production"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "fastapi-0.110.0-py3-none-any.whl", hash = "sha256:87a1f6fb632a218222c5984be540055346a8f5d8a68e8f6fb647b1dc9934de4b"},
-    {file = "fastapi-0.110.0.tar.gz", hash = "sha256:266775f0dcc95af9d3ef39bad55cff525329a931d5fd51930aadd4f428bf7ff3"},
+    {file = "fastapi-0.110.1-py3-none-any.whl", hash = "sha256:5df913203c482f820d31f48e635e022f8cbfe7350e4830ef05a3163925b1addc"},
+    {file = "fastapi-0.110.1.tar.gz", hash = "sha256:6feac43ec359dfe4f45b2c18ec8c94edb8dc2dfc461d417d9e626590c071baad"},
 ]
 
 [package.dependencies]
 pydantic = ">=1.7.4,<1.8 || >1.8,<1.8.1 || >1.8.1,<2.0.0 || >2.0.0,<2.0.1 || >2.0.1,<2.1.0 || >2.1.0,<3.0.0"
-starlette = ">=0.36.3,<0.37.0"
+starlette = ">=0.37.2,<0.38.0"
 typing-extensions = ">=4.8.0"
 
 [package.extras]
@@ -800,13 +800,13 @@ zookeeper = ["kazoo (>=2.8.0)"]
 
 [[package]]
 name = "langchain-core"
-version = "0.1.36"
+version = "0.1.38"
 description = "Building applications with LLMs through composability"
 optional = false
 python-versions = "<4.0,>=3.8.1"
 files = [
-    {file = "langchain_core-0.1.36-py3-none-any.whl", hash = "sha256:564beeb18ab13deca8daf6e6e74acab52e0b8f6202110262a4c914e4450febd2"},
-    {file = "langchain_core-0.1.36.tar.gz", hash = "sha256:aa2432370ca3d2a5d6dd14a810aa6488bf2f622ff7a0a3dc30f6e0ed9d7f5fa8"},
+    {file = "langchain_core-0.1.38-py3-none-any.whl", hash = "sha256:d881b2754254cb4bdb0d5bb56e5c138d032b6e75e5cb21f151b01224b322e02b"},
+    {file = "langchain_core-0.1.38.tar.gz", hash = "sha256:ee8da6d061c06cce7dc22fec224b6ecbc3a8de106d6dd9f409c7fe448ea41861"},
 ]
 
 [package.dependencies]
@@ -839,13 +839,13 @@ tiktoken = ">=0.5.2,<1"
 
 [[package]]
 name = "langsmith"
-version = "0.1.37"
+version = "0.1.38"
 description = "Client library to connect to the LangSmith LLM Tracing and Evaluation Platform."
 optional = false
 python-versions = "<4.0,>=3.8.1"
 files = [
-    {file = "langsmith-0.1.37-py3-none-any.whl", hash = "sha256:2ea0375eb76d95b1cd32f57fc27a5c9c529443fbe816c0c0671d7e25e432ea37"},
-    {file = "langsmith-0.1.37.tar.gz", hash = "sha256:d410491b6ff6e1f07aeb1d33fb19784f544eed5fb549b514c793ab19d8fb4b60"},
+    {file = "langsmith-0.1.38-py3-none-any.whl", hash = "sha256:f36479f82cf537cf40d129ac2e485e72a3981360c7b6cf2549dad77d98eafd8f"},
+    {file = "langsmith-0.1.38.tar.gz", hash = "sha256:2c1f98ac0a8c02e43b625650a6e13c65b09523551bfc21a59d20963f46f7d265"},
 ]
 
 [package.dependencies]
@@ -943,13 +943,13 @@ files = [
 
 [[package]]
 name = "openai"
-version = "1.14.3"
+version = "1.16.0"
 description = "The official Python library for the openai API"
 optional = false
 python-versions = ">=3.7.1"
 files = [
-    {file = "openai-1.14.3-py3-none-any.whl", hash = "sha256:7a465994a7ccf677a110c6cc2ef9d86229bad42c060b585b67049aa749f3b774"},
-    {file = "openai-1.14.3.tar.gz", hash = "sha256:37b514e9c0ff45383ec9b242abd0f7859b1080d4b54b61393ed341ecad1b8eb9"},
+    {file = "openai-1.16.0-py3-none-any.whl", hash = "sha256:c715c9872515369621ab16d31af917540b69af7d5df2d01b4c81f809cc17e91d"},
+    {file = "openai-1.16.0.tar.gz", hash = "sha256:2d1f2b106f0efc35ac9590dd7e4d1fcc10c616bfdd7eae17829c07f9ea212517"},
 ]
 
 [package.dependencies]
@@ -1856,13 +1856,13 @@ sqlcipher = ["sqlcipher3_binary"]
 
 [[package]]
 name = "starlette"
-version = "0.36.3"
+version = "0.37.2"
 description = "The little ASGI library that shines."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "starlette-0.36.3-py3-none-any.whl", hash = "sha256:13d429aa93a61dc40bf503e8c801db1f1bca3dc706b10ef2434a36123568f044"},
-    {file = "starlette-0.36.3.tar.gz", hash = "sha256:90a671733cfb35771d8cc605e0b679d23b992f8dcfad48cc60b38cb29aeb7080"},
+    {file = "starlette-0.37.2-py3-none-any.whl", hash = "sha256:6fe59f29268538e5d0d182f2791a479a0c64638e6935d1c6989e63fb2699c6ee"},
+    {file = "starlette-0.37.2.tar.gz", hash = "sha256:9af890290133b79fc3db55474ade20f6220a364a0402e0b556e7cd5e1e093823"},
 ]
 
 [package.dependencies]
@@ -2097,7 +2097,7 @@ vector-db-based-dep = ["pinecone-client (>=3.1.0,<4.0.0)", "qdrant-client (>=1.8
 type = "git"
 url = "ssh://git@github.com/ankit-dc/verified-destinations"
 reference = "feature/pinecone-qdrant-and-mysql"
-resolved_reference = "9662e8c7604a2f8c651c72712dcd8c482636b9e1"
+resolved_reference = "1acf6bcc322e756b208a45fc8e90b0dc95e40324"
 
 [[package]]
 name = "verified-generators"
@@ -2119,7 +2119,7 @@ PyYAML = "*"
 type = "git"
 url = "ssh://git@github.com/riju-dc/verified-generators"
 reference = "feature/openai-embeddings-and-sentence-transformers"
-resolved_reference = "a0d9b063a209c8d68d8903de2fe5f4dd338dd4a5"
+resolved_reference = "8ad004f8fe29e618f58121498994aef70fffcee7"
 
 [[package]]
 name = "verified-sources"
@@ -2140,7 +2140,7 @@ wikipedia = []
 type = "git"
 url = "ssh://git@github.com/dc-rahul/verified-sources"
 reference = "feature/google-drive-and-wikipedia-forked"
-resolved_reference = "e5d9d3ad0d208e548e9085d00be3dfe51f6a4a1d"
+resolved_reference = "1de29863a5f08731b4ecf3dae04527fbaebd3fa8"
 
 [[package]]
 name = "vine"
