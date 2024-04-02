@@ -34,17 +34,17 @@ async def get_connection_orchestra_response(connection_id: str) -> ConnectionOrc
 
     source_actor_dct = {
         "name": source_actor.name,
-        "module_name": source_actor.name,
+        "module_name": source_actor.module_name,
         "connection_specification": _source.configuration
     }
     generator_actor_dct = {
         "name": generator_actor.name,
-        "module_name": generator_actor.name,
+        "module_name": generator_actor.module_name,
         "connection_specification": _generator.configuration
     }
     destination_actor_dct = {
         "name": destination_actor.name,
-        "module_name": destination_actor.name,
+        "module_name": destination_actor.module_name,
         "connection_specification": _destination.configuration
     }
 
