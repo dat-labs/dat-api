@@ -9,6 +9,7 @@ class Actor(Base):
 
     id = Column(String(36), primary_key=True)
     name = Column(String(255), nullable=False)
+    module_name = Column(String(255), nullable=False)
     icon = Column(String(255))
     actor_type = Column(Enum('source', 'destination',
                         'generator', name='actor_type_enum'))
