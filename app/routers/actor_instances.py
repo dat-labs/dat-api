@@ -21,7 +21,7 @@ Base = declarative_base()
 
 
 class ActorInstance(BaseModel):
-    uuid: str = str(uuid4())
+    # uuid: str
     name: str
     workspace_id: str = 'wkspc-uuid'            # setting defaults
     actor_id: str = 'gdrive-uuid'               # TODO will remove them

@@ -41,8 +41,8 @@ class ConnectionPutRequest(BaseModel):
     configuration: Optional[Dict] = None
     catalog: Optional[DatCatalog] = None
     schedule: Optional[Schedule] = None
-    schedule_type: Optional[str] = None
-    status: Optional[str] = None
+    schedule_type: Optional[str] = "manual"
+    status: Optional[str] = "active"
 
 
 class ConnectionOrchestraResponse(ConnectionBase, ConnectionPdModel):

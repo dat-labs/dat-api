@@ -18,7 +18,7 @@ class Connection(Base):
     configuration = Column(JSON)
     catalog = Column(JSON)
     schedule = Column(JSON)
-    schedule_type = Column(Enum('manual', 'cron', name='schedule_type_enum'), nullable=False, server_default='manual')
+    schedule_type = Column(Enum('manual', 'scheduled', name='schedule_type_enum'), nullable=False, server_default='manual')
     status = Column(Enum('active', 'inactive', name='connection_status_enum'), server_default='active', nullable=False)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
