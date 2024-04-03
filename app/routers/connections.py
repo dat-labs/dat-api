@@ -1,3 +1,5 @@
+import json
+from celery import Celery
 from fastapi import APIRouter, HTTPException
 from ..db_models.connections import (
     Connection as ConnectionModel
@@ -9,6 +11,7 @@ from ..models.connection_model import (
     ConnectionPutRequest
 )
 
+app = Celery('tasks', broker='amqp://mq_user:mq_pass@message-queue:5672//')
 
 router = APIRouter(
     prefix="/connections",
@@ -105,13 +108,11 @@ async def delete_connection(
     except Exception as e:
         raise HTTPException(status_code=403, detail=str(e))
 
-# @router.post("/{connection_id}/run")
-# async def connection_trigger_run(connection_id: int):
-#     # if connection_id not in fake_connections_db:
-#     #     raise HTTPException(status_code=404, detail="connection not found")
-#     app.send_task('dat_worker_task', (open(
-#         'connection.json').read(), ), queue='dat-worker-q')
-#     return json.loads(open('connection.json').read())
+@router.post("/{connection_id}/run")
+async def connection_trigger_run(connection_id: str):
+    app.send_task('dat_worker_task', (open(
+        'connection.json').read(), ), queue='dat-worker-q')
+    return json.loads(open('connection.json').read())
 
 
 # @router.get("/{connection_id}/runs")
