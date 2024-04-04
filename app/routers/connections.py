@@ -8,8 +8,9 @@ from ..database import get_db
 from ..common.utils import CustomModel
 from ..models.connection_model import (
     ConnectionResponse, ConnectionPostRequest,
-    ConnectionPutRequest
+    ConnectionPutRequest, ConnectionOrchestraResponse
 )
+from ..internal.connections import fetch_connection_config
 
 app = Celery('tasks', broker='amqp://mq_user:mq_pass@message-queue:5672//')
 
@@ -108,11 +109,19 @@ async def delete_connection(
     except Exception as e:
         raise HTTPException(status_code=403, detail=str(e))
 
-@router.post("/{connection_id}/run")
-async def connection_trigger_run(connection_id: str):
-    app.send_task('dat_worker_task', (open(
-        'connection.json').read(), ), queue='dat-worker-q')
-    return json.loads(open('connection.json').read())
+@router.post("/{connection_id}/run",
+             response_model=ConnectionOrchestraResponse,
+             description="Trigger the run for the connection")
+async def connection_trigger_run(
+    connection_id: str
+) -> ConnectionOrchestraResponse:
+    """
+    Call /internal/connections/{connection_id} endpoint
+    to get the connection configuration and trigger the run
+    """
+    resp = await fetch_connection_config(connection_id)
+    app.send_task('dat_worker_task', (resp.json(), ), queue='dat-worker-q')
+    return resp.model_dump()
 
 
 # @router.get("/{connection_id}/runs")

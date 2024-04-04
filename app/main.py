@@ -29,6 +29,10 @@ async def unauthorized_exception_handler(request: Request, exc: Unauthorized):
 # base_router.include_router(connections.router)
 # app.include_router(base_router)
 
+app.include_router(
+    connections_internal.router,
+    prefix="/internal"
+)
 # app.include_router(admin.router)
 app.include_router(connections.router)
 # app.include_router(sources.router)
@@ -44,10 +48,6 @@ app.include_router(
     # tags=["admin"],
     # dependencies=[Depends(get_token_header)],
     # responses={418: {"description": "I'm a teapot"}},
-)
-app.include_router(
-    connections_internal.router,
-    prefix="/internal"
 )
 
 @app.get("/")

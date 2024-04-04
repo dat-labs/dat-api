@@ -13,7 +13,7 @@ class Actor(Base):
     icon = Column(String(255))
     actor_type = Column(Enum('source', 'destination',
                         'generator', name='actor_type_enum'))
-    status = Column(Enum('active', 'inactive', name='actor_status_enum'))
+    status = Column(Enum('active', 'inactive', name='actor_status_enum'), nullable=False)
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
 
