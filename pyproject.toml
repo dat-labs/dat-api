@@ -11,9 +11,9 @@ python = "^3.10"
 pyjwt = "^2.8.0"
 bcrypt = "^4.1.2"
 dat-core = {git = "ssh://git@github.com/dat-labs/dat-core", rev = "main", develop = true}
-verified-sources = {git = "ssh://git@github.com/dc-rahul/verified-sources", rev = "main", develop = true}
+verified-sources = {git = "ssh://git@github.com/dat-labs/verified-sources", rev = "main", develop = true}
 verified-generators = {git = "ssh://git@github.com/dat-labs/verified-generators", rev = "main", develop = true}
-verified-destinations = {git = "ssh://git@github.com/ankit-dc/verified-destinations", rev = "main", develop = true}
+verified-destinations = {git = "ssh://git@github.com/dat-labs/verified-destinations", rev = "main", develop = true}
 celery = "^5.3.6"
 fastapi = "^0.110.0"
 sqlalchemy = "^2.0.28"
