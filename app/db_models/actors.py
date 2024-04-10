@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Enum
+from sqlalchemy import Column, String, DateTime, Enum, text
 from sqlalchemy.orm import relationship
 from app.db_models import Base
 from app.db_models.actor_instances import ActorInstance
@@ -7,7 +7,8 @@ from app.db_models.actor_instances import ActorInstance
 class Actor(Base):
     __tablename__ = 'actors'
 
-    id = Column(String(36), primary_key=True)
+    id = Column(String(36), primary_key=True,
+                nullable=False, server_default=text("uuid_generate_v4()"))
     name = Column(String(255), nullable=False)
     module_name = Column(String(255), nullable=False)
     icon = Column(String(255))

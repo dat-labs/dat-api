@@ -1,4 +1,3 @@
-import json
 from celery import Celery
 from fastapi import APIRouter, HTTPException
 from ..db_models.connections import (
@@ -24,8 +23,13 @@ router = APIRouter(
 @router.get("/list",
             response_model=list[ConnectionResponse],
             description="Fetch all active connections")
-async def fetch_available_connections(
-) -> list[ConnectionResponse]:
+async def fetch_available_connections() -> list[ConnectionResponse]:
+    """
+    Fetches all active connections from the database.
+
+    Returns:
+        A list of active connections.
+    """
     db = list(get_db())[0]
 
     connections = db.query(ConnectionModel).filter_by(status='active').all()
@@ -34,9 +38,19 @@ async def fetch_available_connections(
 
 @router.get("/{connection_id}",
             response_model=ConnectionResponse)
-async def read_connection(
-    connection_id: str
-) -> ConnectionResponse:
+async def read_connection(connection_id: str) -> ConnectionResponse:
+    """
+    Retrieves a connection by its ID.
+
+    Args:
+        connection_id: The ID of the connection.
+
+    Returns:
+        The connection with the specified ID.
+
+    Raises:
+        HTTPException: If the connection is not found.
+    """
     db = list(get_db())[0]
     connection = db.query(ConnectionModel).get(connection_id)
     if connection is None:
@@ -47,9 +61,19 @@ async def read_connection(
 @router.post("",
              responses={403: {"description": "Operation forbidden"}},
              response_model=ConnectionResponse)
-async def create_connection(
-    payload: ConnectionPostRequest
-) -> ConnectionResponse:
+async def create_connection(payload: ConnectionPostRequest) -> ConnectionResponse:
+    """
+    Creates a new connection.
+
+    Args:
+        payload: The request payload containing the connection details.
+
+    Returns:
+        The created connection.
+
+    Raises:
+        HTTPException: If the operation is forbidden or an error occurs.
+    """
     try:
         db = list(get_db())[0]
         connection_instance = ConnectionModel(
@@ -67,10 +91,20 @@ async def create_connection(
 @router.put("/{connection_id}",
             responses={403: {"description": "Operation forbidden"}},
             response_model=ConnectionResponse)
-async def update_connection(
-    connection_id: str,
-    payload: ConnectionPutRequest
-) -> ConnectionResponse:
+async def update_connection(connection_id: str, payload: ConnectionPutRequest) -> ConnectionResponse:
+    """
+    Updates an existing connection.
+
+    Args:
+        connection_id: The ID of the connection to update.
+        payload: The request payload containing the updated connection details.
+
+    Returns:
+        The updated connection.
+
+    Raises:
+        HTTPException: If the connection is not found or an error occurs.
+    """
     db = list(get_db())[0]
     try:
         connection_instance = db.query(ConnectionModel).get(connection_id)
@@ -93,9 +127,16 @@ async def update_connection(
 @router.delete("/{connection_id}",
                responses={404: {"description": "Connection not found"}},
                status_code=204)
-async def delete_connection(
-    connection_id: str
-) -> None:
+async def delete_connection(connection_id: str) -> None:
+    """
+    Deletes a connection.
+
+    Args:
+        connection_id: The ID of the connection to delete.
+
+    Raises:
+        HTTPException: If the connection is not found or an error occurs.
+    """
     db = list(get_db())[0]
     try:
         connection_instance = db.query(ConnectionModel).get(connection_id)
@@ -112,15 +153,21 @@ async def delete_connection(
 @router.post("/{connection_id}/run",
              response_model=ConnectionOrchestraResponse,
              description="Trigger the run for the connection")
-async def connection_trigger_run(
-    connection_id: str
-) -> ConnectionOrchestraResponse:
+async def connection_trigger_run(connection_id: str) -> ConnectionOrchestraResponse:
     """
-    Call /internal/connections/{connection_id} endpoint
-    to get the connection configuration and trigger the run
+    Triggers a run for the specified connection.
+
+    Args:
+        connection_id: The ID of the connection.
+
+    Returns:
+        The response from the connection orchestration.
+
+    Raises:
+        HTTPException: If the connection is not found or an error occurs.
     """
     resp = await fetch_connection_config(connection_id)
-    app.send_task('dat_worker_task', (resp.json(), ), queue='dat-worker-q')
+    app.send_task('dat_worker_task', (resp.model_dump_json(), ), queue='dat-worker-q')
     return resp.model_dump()
 
 
