@@ -80,5 +80,5 @@ async def get_actor_specs(actor_uuid: str):
     ]
     if not matching_actors:
         raise HTTPException(status_code=404, detail="actor not found")
-    with urllib.request.urlopen(f'https://raw.githubusercontent.com/dc-rahul/verified-sources/feature/google-drive-and-wikipedia-forked/verified_sources/{matching_actors[0].module_name}/specs.yml') as response:
+    with urllib.request.urlopen(f'https://raw.githubusercontent.com/dat-labs/verified-sources/main/verified_sources/{matching_actors[0].module_name}/specs.yml') as response:
         return yaml.safe_load(response.read().decode())
