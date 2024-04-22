@@ -1,9 +1,9 @@
 from sqlalchemy import Column, String, DateTime, ForeignKey, JSON, Enum, text
 from sqlalchemy.sql import func
-from app.db_models import Base
+from app.db_models import Base, ModelDict
 
 
-class Connection(Base):
+class Connection(Base, ModelDict):
     __tablename__ = 'connections'
 
     id = Column(String(36), primary_key=True,
@@ -22,10 +22,6 @@ class Connection(Base):
     status = Column(Enum('active', 'inactive', name='connection_status_enum'), server_default='active', nullable=False)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
-
-    def to_dict(self):
-        return {key: value for key, value in self.__dict__.items()
-                if not key.startswith('_')}
 
     def __repr__(self):
         return f"<Connection(id='{self.id}', name='{self.name}', status='{self.status}')>"

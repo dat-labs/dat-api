@@ -1,4 +1,5 @@
-from fastapi import Depends, FastAPI, Request, HTTPException, APIRouter
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 # from .dependencies import get_query_token, get_token_header
 from .internal import admin, connections as connections_internal
 from .routers import (connections, 
@@ -11,6 +12,17 @@ from .common.exceptions.exceptions import NotFound, Unauthorized
 
 app = FastAPI(
     # dependencies=[Depends(get_token_header)]
+)
+
+
+origins = ["http://localhost:3000"]  # Replace with your allowed origins
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,  # Adjust as needed
+    allow_methods=["*"],  # Adjust as needed
+    allow_headers=["*"],  # Adjust as needed
 )
 
 @app.exception_handler(NotFound)
