@@ -240,4 +240,17 @@ async def get_actor_specs(
         import_module(f'verified_{actor.actor_type}s.{actor.module_name}.{actor.actor_type}'), actor.name)
 
     catalog = SourceClass().spec()
+    try:
+        catalog['properties']['connection_specification'][
+            'properties'].update({
+                "dat-name": {
+                    "type": "string",
+                    "description": "name of the actor instance",
+                    "title": "Name",
+                    "order": 0
+                }
+            }
+        )
+    except KeyError:
+        print("unable to traverse to catalog['properties']['connection_specification']['properties']")
     return catalog
