@@ -5,6 +5,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.sql import func
 from app.db_models import Base, ModelDict
+from app.db_models.workspaces import Workspace
 
 
 class ActorInstance(Base, ModelDict):
@@ -13,7 +14,7 @@ class ActorInstance(Base, ModelDict):
     id = Column(String(36), primary_key=True,
                    nullable=False, server_default=text("uuid_generate_v4()"))
     workspace_id = Column(String(36), ForeignKey(
-        'workspaces.id'), nullable=False)
+        Workspace.id), nullable=False)
     actor_id = Column(String(36), ForeignKey('actors.id'), nullable=False)
     name = Column(String(255))
     configuration = Column(JSON)

@@ -1,6 +1,7 @@
 from sqlalchemy import Column, String, DateTime, ForeignKey, JSON, Enum, text
 from sqlalchemy.sql import func
 from app.db_models import Base, ModelDict
+from app.db_models.workspaces import Workspace
 
 
 class Connection(Base, ModelDict):
@@ -8,7 +9,7 @@ class Connection(Base, ModelDict):
 
     id = Column(String(36), primary_key=True,
                    nullable=False, server_default=text("uuid_generate_v4()"))
-    workspace_id = Column(String(36), ForeignKey('workspaces.id'), nullable=False)
+    workspace_id = Column(String(36), ForeignKey(Workspace.id), nullable=False)
     source_instance_id = Column(String(36), ForeignKey('actor_instances.id'), nullable=False)
     generator_instance_id = Column(String(36), ForeignKey('actor_instances.id'), nullable=False)
     destination_instance_id = Column(String(36), ForeignKey('actor_instances.id'), nullable=False)
