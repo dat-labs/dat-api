@@ -247,7 +247,7 @@ async def get_actor_specs(
                     "type": "string",
                     "description": "name of the actor instance",
                     "title": "Name",
-                    "order": 0
+                    "order": -1
                 }
             }
         )
