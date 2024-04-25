@@ -1,16 +1,19 @@
-import json
 from celery import Celery
-from fastapi import APIRouter, HTTPException
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException
+)
 from ..db_models.connections import (
     Connection as ConnectionModel
 )
-from ..database import get_db
-from ..common.utils import CustomModel
-from ..models.connection_model import (
+from app.database import get_db
+from app.common.utils import CustomModel
+from app.models.connection_model import (
     ConnectionResponse, ConnectionPostRequest,
     ConnectionPutRequest, ConnectionOrchestraResponse
 )
-from ..internal.connections import fetch_connection_config
+from app.internal.connections import fetch_connection_config
 
 app = Celery('tasks', broker='amqp://mq_user:mq_pass@message-queue:5672//')
 
@@ -25,19 +28,39 @@ router = APIRouter(
             response_model=list[ConnectionResponse],
             description="Fetch all active connections")
 async def fetch_available_connections(
+        db=Depends(get_db)
 ) -> list[ConnectionResponse]:
-    db = list(get_db())[0]
+    """
+    Fetches all active connections from the database.
 
-    connections = db.query(ConnectionModel).filter_by(status='active').all()
-    return connections
+    Returns:
+        A list of active connections.
+    """
+    try:
+        connections = db.query(ConnectionModel).filter_by(status='active').all()
+        return connections
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.get("/{connection_id}",
             response_model=ConnectionResponse)
 async def read_connection(
-    connection_id: str
+    connection_id: str,
+    db=Depends(get_db)
 ) -> ConnectionResponse:
-    db = list(get_db())[0]
+    """
+    Retrieves a connection by its ID.
+
+    Args:
+        connection_id: The ID of the connection.
+
+    Returns:
+        The connection with the specified ID.
+
+    Raises:
+        HTTPException: If the connection is not found.
+    """
     connection = db.query(ConnectionModel).get(connection_id)
     if connection is None:
         raise HTTPException(status_code=404, detail="Connection not found")
@@ -48,10 +71,22 @@ async def read_connection(
              responses={403: {"description": "Operation forbidden"}},
              response_model=ConnectionResponse)
 async def create_connection(
-    payload: ConnectionPostRequest
+    payload: ConnectionPostRequest,
+    db=Depends(get_db)
 ) -> ConnectionResponse:
+    """
+    Creates a new connection.
+
+    Args:
+        payload: The request payload containing the connection details.
+
+    Returns:
+        The created connection.
+
+    Raises:
+        HTTPException: If the operation is forbidden or an error occurs.
+    """
     try:
-        db = list(get_db())[0]
         connection_instance = ConnectionModel(
             **payload.model_dump(exclude={'catalog'}),
             catalog=CustomModel.convert_enums_to_str(payload.catalog.model_dump())
@@ -69,9 +104,22 @@ async def create_connection(
             response_model=ConnectionResponse)
 async def update_connection(
     connection_id: str,
-    payload: ConnectionPutRequest
+    payload: ConnectionPutRequest,
+    db=Depends(get_db)
 ) -> ConnectionResponse:
-    db = list(get_db())[0]
+    """
+    Updates an existing connection.
+
+    Args:
+        connection_id: The ID of the connection to update.
+        payload: The request payload containing the updated connection details.
+
+    Returns:
+        The updated connection.
+
+    Raises:
+        HTTPException: If the connection is not found or an error occurs.
+    """
     try:
         connection_instance = db.query(ConnectionModel).get(connection_id)
         if connection_instance is None:
@@ -94,8 +142,18 @@ async def update_connection(
                responses={404: {"description": "Connection not found"}},
                status_code=204)
 async def delete_connection(
-    connection_id: str
+    connection_id: str,
+    db=Depends(get_db)
 ) -> None:
+    """
+    Deletes a connection.
+
+    Args:
+        connection_id: The ID of the connection to delete.
+
+    Raises:
+        HTTPException: If the connection is not found or an error occurs.
+    """
     db = list(get_db())[0]
     try:
         connection_instance = db.query(ConnectionModel).get(connection_id)
@@ -112,15 +170,24 @@ async def delete_connection(
 @router.post("/{connection_id}/run",
              response_model=ConnectionOrchestraResponse,
              description="Trigger the run for the connection")
-async def connection_trigger_run(
-    connection_id: str
+async def connection_trigger_run(\
+    connection_id: str,
+    db = Depends(get_db)
 ) -> ConnectionOrchestraResponse:
     """
-    Call /internal/connections/{connection_id} endpoint
-    to get the connection configuration and trigger the run
+    Triggers a run for the specified connection.
+
+    Args:
+        connection_id: The ID of the connection.
+
+    Returns:
+        The response from the connection orchestration.
+
+    Raises:
+        HTTPException: If the connection is not found or an error occurs.
     """
     resp = await fetch_connection_config(connection_id)
-    app.send_task('dat_worker_task', (resp.json(), ), queue='dat-worker-q')
+    app.send_task('dat_worker_task', (resp.model_dump_json(), ), queue='dat-worker-q')
     return resp.model_dump()
 
 
