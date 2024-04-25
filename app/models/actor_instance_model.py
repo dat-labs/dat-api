@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from pydantic import BaseModel
 from ..models.actor_model import ActorResponse
 
@@ -35,4 +35,5 @@ class ActorInstanceResponse(ActorInstanceBase):
 
 
 class ActorInstanceGetResponse(ActorInstanceResponse):
-    actor: Optional[ActorResponse] = None
+    actor: ActorResponse = None
+    connected_connections: List[object] = []

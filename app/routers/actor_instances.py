@@ -8,6 +8,7 @@ from typing import List
 from dat_core.pydantic_models.connector_specification import ConnectorSpecification
 from app.db_models.actors import Actor as ActorModel
 from app.db_models.actor_instances import ActorInstance as ActorInstanceModel
+from app.db_models.connections import Connection as ConnectionModel
 from pydantic import ValidationError
 from app.database import get_db
 from app.models.actor_instance_model import (
@@ -23,6 +24,11 @@ router = APIRouter(
     # dependencies=[Depends(get_db)]
 )
 
+ACTOR_TYPE_ID_MAP = {
+    "source": "source_instance_id",
+    "generator": "generator_instance_id",
+    "destination": "destination_instance_id"
+}
 
 @router.get(
         "/{actor_type}/list",
@@ -34,11 +40,18 @@ async def fetch_available_actor_instances(
     db=Depends(get_db)
 ) -> List[ActorInstanceGetResponse]:
     try:
-        actor_instances = db.query(ActorInstanceModel).filter_by(actor_type=actor_type).all()
+        actor_instances = db.query(ActorInstanceModel).filter_by(
+            actor_type=actor_type).all()
 
-        #For all actor_instances call db.query(ActorModel).get(actor_instance.actor_id) and add to the response
         for actor_instance in actor_instances:
             actor_instance.actor = db.query(ActorModel).get(actor_instance.actor_id)
+            connected_connections = [
+                connection.to_dict()
+                for connection in db.query(ConnectionModel).filter_by(
+                    **{ACTOR_TYPE_ID_MAP[actor_type]: actor_instance.id}
+                ).all()
+            ]
+            actor_instance.connected_connections = connected_connections
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -56,10 +69,17 @@ async def read_actor_instance(
     if actor_instance is None:
         raise HTTPException(status_code=404, detail="Actor instance not found")
     _actor = db.query(ActorModel).get(actor_instance.actor_id)
+    connected_connections = [
+        connection.to_dict()
+        for connection in db.query(ConnectionModel).filter_by(
+            **{ACTOR_TYPE_ID_MAP[_actor.actor_type]: actor_instance.id}
+        ).all()
+    ]
 
     return ActorInstanceGetResponse(
         **actor_instance.to_dict(),
-        actor=_actor.to_dict()
+        actor=_actor.to_dict(),
+        connected_connections=connected_connections
     )
 
 
