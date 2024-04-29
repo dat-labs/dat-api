@@ -164,10 +164,10 @@ async def delete_actor_instance(
 
 @router.get("/{actor_instance_uuid}/discover")
 async def call_actor_instance_discover(
-    actor_instance_id: str,
+    actor_instance_uuid: str,
     db=Depends(get_db)
 ):
-    actor_instance = db.query(ActorInstanceModel).get(actor_instance_id)
+    actor_instance = db.query(ActorInstanceModel).get(actor_instance_uuid)
     connector_specification = ConnectorSpecification(
         name=actor_instance.actor.name,
         module_name=actor_instance.actor.module_name,
