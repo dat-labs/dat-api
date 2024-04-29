@@ -1,18 +1,21 @@
+from typing import List
 from celery import Celery
 from fastapi import (
     APIRouter,
     Depends,
     HTTPException
 )
-from ..db_models.connections import (
+from app.db_models.connections import (
     Connection as ConnectionModel
 )
+from app.db_models.connection_run_logs import ConnectionRunLogs
 from app.database import get_db
 from app.common.utils import CustomModel
 from app.models.connection_model import (
     ConnectionResponse, ConnectionPostRequest,
     ConnectionPutRequest, ConnectionOrchestraResponse
 )
+from app.models.connection_run_log_model import ConnectionRunLogResponse
 from app.internal.connections import fetch_connection_config
 
 app = Celery('tasks', broker='amqp://mq_user:mq_pass@message-queue:5672//')
@@ -191,11 +194,31 @@ async def connection_trigger_run(\
     return resp.model_dump()
 
 
-# @router.get("/{connection_id}/runs")
-# async def get_connection_runs():
-#     return fake_connections_db
+@router.post("/{connection_id}/runs",
+             response_model=List[ConnectionRunLogResponse],
+             description="Get all runs for a given connection id")
+async def get_connection_run_logs(
+    connection_id: str,
+    db = Depends(get_db)
+) -> List[ConnectionRunLogResponse]:
+    db = list(get_db())[0]
+    try:
+        run_logs = db.query(ConnectionRunLogs).filter_by(connection_id=connection_id).all()
+        return run_logs
+    except Exception as e:
+        raise HTTPException(status_code=403, detail=str(e))
 
+@router.get("/runs/{run_id}",
+            response_model=ConnectionRunLogResponse,
+            description="Get a particular connection run log by id")
+async def get_connection_run_by_run_id(
+    connection_id: str,
+    run_id: str
+    ) -> ConnectionRunLogResponse:
+    db = list(get_db())[0]
+    try:
+        run_log = db.query(ConnectionRunLogs).filter_by(connection_id=connection_id, id=run_id).first()
+        return run_log
+    except Exception as e:
+        raise HTTPException(status_code=403, detail=str(e))
 
-# @router.get("/{connection_id}/runs/{run_id}")
-# async def get_connection_runs_by_run_id():
-#     return fake_connections_db
