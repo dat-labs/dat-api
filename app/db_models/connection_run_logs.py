@@ -28,6 +28,8 @@ class ConnectionRunLogs(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
+    run_id = Column(String(36),
+                nullable=False, server_default=text("uuid_generate_v4()"))
 
     def __repr__(self):
-        return f"<ConnectionRunLogs(id={self.id}, connection_id={self.connection_id}, level={self.level}, message='{self.message[:20]}...', created_at={self.created_at}, updated_at={self.updated_at})>"
+        return f"<ConnectionRunLogs(id={self.id}, connection_id={self.connection_id}, run_id={self.run_id}, level={self.level}, message='{self.message[:20]}...', created_at={self.created_at}, updated_at={self.updated_at})>"
