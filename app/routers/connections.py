@@ -4,9 +4,10 @@ from fastapi import (
     Depends,
     HTTPException
 )
-from ..db_models.connections import (
+from app.db_models.connections import (
     Connection as ConnectionModel
 )
+from app.db_models.connection_run_logs import ConnectionRunLogs
 from app.database import get_db
 from app.common.utils import CustomModel
 from app.models.connection_model import (
@@ -189,13 +190,3 @@ async def connection_trigger_run(\
     resp = await fetch_connection_config(connection_id)
     app.send_task('dat_worker_task', (resp.model_dump_json(), ), queue='dat-worker-q')
     return resp.model_dump()
-
-
-# @router.get("/{connection_id}/runs")
-# async def get_connection_runs():
-#     return fake_connections_db
-
-
-# @router.get("/{connection_id}/runs/{run_id}")
-# async def get_connection_runs_by_run_id():
-#     return fake_connections_db

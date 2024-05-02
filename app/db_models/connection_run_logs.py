@@ -13,6 +13,11 @@ class LogLevel(enum.Enum):
     TRACE = 'TRACE'
 
 
+class MessageType(enum.Enum):
+    STATE = 'STATE'
+    LOG = 'LOG'
+
+
 class ConnectionRunLogs(Base):
     __tablename__ = 'connection_run_logs'
 
@@ -22,12 +27,13 @@ class ConnectionRunLogs(Base):
                 server_default=text("uuid_generate_v4()"))
     connection_id = Column(String(36), ForeignKey(
         'connections.id'), nullable=False)
-    level = Column(Enum(LogLevel), nullable=False)
     message = Column(String, nullable=False)
     stack_trace = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow,
                         onupdate=datetime.utcnow)
+    run_id = Column(String(36), nullable=False)
+    message_type = Column(Enum(MessageType), nullable=False)
 
     def __repr__(self):
-        return f"<ConnectionRunLogs(id={self.id}, connection_id={self.connection_id}, level={self.level}, message='{self.message[:20]}...', created_at={self.created_at}, updated_at={self.updated_at})>"
+        return f"<ConnectionRunLogs(id={self.id}, connection_id={self.connection_id}, run_id={self.run_id}, message='{self.message[:20]}...', created_at={self.created_at}, updated_at={self.updated_at})>"
