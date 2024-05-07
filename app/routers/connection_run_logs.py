@@ -11,12 +11,12 @@ Functions:
     get_connection_run_logs: Endpoint for getting all runs for a given connection ID.
     get_connection_runs_by_run_id: Endpoint for getting run logs for a particular run ID.
 """
-
-from typing import List
+import json
+from typing import List, Dict
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import StatementError
 from pydantic import BaseModel
-from dat_core.pydantic_models import DatMessage, Type
+from dat_core.pydantic_models import DatMessage, Type, DatStateMessage, StreamState
 from app.db_models.connection_run_logs import ConnectionRunLogs
 from app.models.connection_run_log_model import ConnectionRunLogResponse
 from app.database import get_db
@@ -122,3 +122,28 @@ async def get_connection_runs_by_run_id(
         return run_logs
     except Exception as e:
         raise HTTPException(status_code=403, detail=str(e))
+
+
+@router.get("/{connection_id}/stream-states",
+             response_model=Dict[str, StreamState],
+             description="Get the latest stream states for a connection")
+async def get_combined_stream_states(
+    connection_id: str,
+    db=Depends(get_db)
+) -> Dict[str, StreamState]:
+    db = list(get_db())[0]
+    combined_states = {}
+    try:
+        state_msgs = db.query(ConnectionRunLogs).filter_by(
+            connection_id=connection_id, message_type='STATE').order_by(ConnectionRunLogs.updated_at.desc())
+        for _state_msg in state_msgs:
+            _state_msg = DatStateMessage(**json.loads(_state_msg))
+            if _state_msg.stream.namespace not in combined_states:
+                combined_states[_state_msg.stream.namespace] = _state_msg.stream_state
+        return combined_states
+    except StatementError as exc:
+        raise HTTPException(status_code=500, detail=repr(exc))
+    except Exception as exc:
+        import traceback
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail="Something went wrong")
