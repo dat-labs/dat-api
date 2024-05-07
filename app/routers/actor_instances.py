@@ -98,7 +98,10 @@ async def create_actor_instance(
         db.add(db_actor_instance)
         db.commit()
         db.refresh(db_actor_instance)
-        return db_actor_instance
+        return ActorInstanceResponse(
+            **db_actor_instance.to_dict(),
+            actor=db.query(ActorModel).get(db_actor_instance.actor_id).to_dict()
+        )
     except ValidationError as e:
         raise HTTPException(status_code=403, detail=str(e))
     except Exception as e:
@@ -138,7 +141,10 @@ async def update_actor_instance(
             setattr(actor_instance, key, value)
         db.commit()
         db.refresh(actor_instance)
-        return actor_instance
+        return ActorInstanceResponse(
+            **actor_instance.to_dict(),
+            actor=db.query(ActorModel).get(actor_instance.actor_id).to_dict()
+        )
     except ValidationError as e:
         raise HTTPException(status_code=403, detail=str(e))
     except Exception as e:
@@ -164,10 +170,10 @@ async def delete_actor_instance(
 
 @router.get("/{actor_instance_uuid}/discover")
 async def call_actor_instance_discover(
-    actor_instance_id: str,
+    actor_instance_uuid: str,
     db=Depends(get_db)
 ):
-    actor_instance = db.query(ActorInstanceModel).get(actor_instance_id)
+    actor_instance = db.query(ActorInstanceModel).get(actor_instance_uuid)
     connector_specification = ConnectorSpecification(
         name=actor_instance.actor.name,
         module_name=actor_instance.actor.module_name,

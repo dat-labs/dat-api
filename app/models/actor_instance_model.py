@@ -12,7 +12,7 @@ class ActorInstanceBase(BaseModel):
     user_id: str
     name: str
     actor_type: str
-    status: str
+    status: str = "active"
     configuration: ConnectorSpecificationConnectionSpec = {}
 
 
@@ -26,14 +26,14 @@ class ActorInstancePutRequest(BaseModel):
     user_id: Optional[str] = None
     name: Optional[str] = None
     actor_type: Optional[str] = None
-    status: Optional[str] = None
+    status: Optional[str] = "active"
     configuration: Optional[ConnectorSpecificationConnectionSpec] = {}
 
 
 class ActorInstanceResponse(ActorInstanceBase):
     id: str
+    actor: ActorResponse = None
 
 
 class ActorInstanceGetResponse(ActorInstanceResponse):
-    actor: ActorResponse = None
     connected_connections: List[object] = []
