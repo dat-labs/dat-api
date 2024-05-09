@@ -135,10 +135,12 @@ async def get_combined_stream_states(
     combined_states = {}
     try:
         state_msgs = db.query(ConnectionRunLogs).filter_by(
-            connection_id=connection_id, message_type='STATE').order_by(ConnectionRunLogs.updated_at.desc())
+            connection_id=connection_id, message_type='STATE')
         for _state_msg in state_msgs:
             _state_msg = DatStateMessage(**json.loads(_state_msg.message))
             if _state_msg.stream.namespace not in combined_states:
+                combined_states[_state_msg.stream.namespace] = _state_msg.stream_state
+            elif combined_states[_state_msg.stream.namespace].emitted_at < _state_msg.stream_state.emitted_at:
                 combined_states[_state_msg.stream.namespace] = _state_msg.stream_state
         return combined_states
     except StatementError as exc:
