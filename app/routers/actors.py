@@ -214,7 +214,7 @@ async def delete_actor(
 async def get_actor_specs(
     actor_id: str,
     db=Depends(get_db)
-) -> dict:
+):
     """
     Retrieves the specifications of an actor.
 
@@ -239,18 +239,23 @@ async def get_actor_specs(
     SourceClass = getattr(
         import_module(f'verified_{actor.actor_type}s.{actor.module_name}.{actor.actor_type}'), actor.name)
 
-    catalog = SourceClass().spec()
-    try:
-        catalog['properties']['connection_specification'][
-            'properties'].update({
-                "dat-name": {
-                    "type": "string",
-                    "description": "name of the actor instance",
-                    "title": "Name",
-                    "order": -1
-                }
-            }
-        )
-    except KeyError:
-        print("unable to traverse to catalog['properties']['connection_specification']['properties']")
-    return catalog
+    return SourceClass().spec()
+    # try:
+    #     catalog['properties']['connection_specification'][
+    #         'properties'].update({
+    #             "dat-name": {
+    #                 "type": "string",
+    #                 "description": "name of the actor instance",
+    #                 "title": "Name",
+    #                 "order": -1
+    #             }
+    #         }
+    #     )
+    # except KeyError:
+    #     print("unable to traverse to catalog['properties']['connection_specification']['properties']")
+    # print(f'256: {catalog}')
+    # print(f'257: {type(catalog)}')
+    # print(f'bool: {isinstance(catalog, dict)}')
+    # import json
+    # print(f'259: {json.dumps(catalog)}')
+    # return catalog
