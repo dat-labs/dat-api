@@ -24,6 +24,28 @@ router = APIRouter(
     # dependencies=[Depends(get_db)]
 )
 
+def get_actor_instance(db, actor_instance_id: str):
+    '''
+    Function to get actor instance for an actor_id.
+    TODO: refactor the code for routers into a seperate service class
+    '''
+    actor_instance = db.query(ActorInstanceModel).get(actor_instance_id)
+    if actor_instance is None:
+        raise HTTPException(status_code=404, detail="Actor instance not found")
+    _actor = db.query(ActorModel).get(actor_instance.actor_id)
+    connected_connections = [
+        connection.to_dict()
+        for connection in db.query(ConnectionModel).filter_by(
+            **{ACTOR_TYPE_ID_MAP[_actor.actor_type]: actor_instance.id}
+        ).all()
+    ]
+
+    return ActorInstanceGetResponse(
+        **actor_instance.to_dict(),
+        actor=_actor.to_dict(),
+        connected_connections=connected_connections
+    )
+
 ACTOR_TYPE_ID_MAP = {
     "source": "source_instance_id",
     "generator": "generator_instance_id",
@@ -65,22 +87,23 @@ async def read_actor_instance(
     actor_instance_id: str,
     db=Depends(get_db)
 ) -> ActorInstanceGetResponse:
-    actor_instance = db.query(ActorInstanceModel).get(actor_instance_id)
-    if actor_instance is None:
-        raise HTTPException(status_code=404, detail="Actor instance not found")
-    _actor = db.query(ActorModel).get(actor_instance.actor_id)
-    connected_connections = [
-        connection.to_dict()
-        for connection in db.query(ConnectionModel).filter_by(
-            **{ACTOR_TYPE_ID_MAP[_actor.actor_type]: actor_instance.id}
-        ).all()
-    ]
+    # actor_instance = db.query(ActorInstanceModel).get(actor_instance_id)
+    # if actor_instance is None:
+    #     raise HTTPException(status_code=404, detail="Actor instance not found")
+    # _actor = db.query(ActorModel).get(actor_instance.actor_id)
+    # connected_connections = [
+    #     connection.to_dict()
+    #     for connection in db.query(ConnectionModel).filter_by(
+    #         **{ACTOR_TYPE_ID_MAP[_actor.actor_type]: actor_instance.id}
+    #     ).all()
+    # ]
 
-    return ActorInstanceGetResponse(
-        **actor_instance.to_dict(),
-        actor=_actor.to_dict(),
-        connected_connections=connected_connections
-    )
+    # return ActorInstanceGetResponse(
+    #     **actor_instance.to_dict(),
+    #     actor=_actor.to_dict(),
+    #     connected_connections=connected_connections
+    # )
+    return get_actor_instance(db, actor_instance_id)
 
 
 @router.post("",
