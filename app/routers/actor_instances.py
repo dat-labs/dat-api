@@ -130,6 +130,42 @@ async def create_actor_instance(
     except Exception as e:
         raise HTTPException(status_code=403, detail=str(e))
 
+@router.post(
+        "/test_and_save",
+        responses={403: {"description": "Operation forbidden"}},
+        response_model=ActorInstanceResponse
+)
+async def test_and_save_actor_instance(
+    payload: ActorInstancePostRequest,
+    db=Depends(get_db)
+) -> ActorInstanceResponse:
+    try:
+        db_actor_instance = ActorInstanceModel(
+            **payload.model_dump()
+        )
+        db.add(db_actor_instance)
+        # Test the connection
+        actor = db.query(ActorModel).get(db_actor_instance.actor_id)
+        SourceClass = getattr(
+        import_module(f'verified_{actor.actor_type}s.{actor.module_name}.{actor.actor_type}'), actor.name)
+        config = ConnectorSpecification(
+            name=actor.name,
+            module_name=actor.module_name,
+            connection_specification=db_actor_instance.configuration
+        )
+        # assert isinstance(check_connection_tpl, DatConnectionStatus)
+        # assert check_connection_tpl.status.name == 'SUCCEEDED'
+        check_connection_tpl = SourceClass().check(config)
+        if not check_connection_tpl.status.name == 'SUCCEEDED':
+            raise HTTPException(status_code=403, detail=check_connection_tpl.message)
+        db.commit()
+        db.refresh(db_actor_instance)
+        return ActorInstanceResponse(
+            **db_actor_instance.to_dict(),
+            actor=db.query(ActorModel).get(db_actor_instance.actor_id).to_dict()
+        )
+    except Exception as e:
+        raise HTTPException(status_code=403, detail=str(e))
 
 @router.put(
     "/{actor_instance_id}",

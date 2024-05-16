@@ -1,4 +1,5 @@
 from sqlalchemy import Column, String, DateTime, ForeignKey, JSON, Enum, text
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db_models import Base, ModelDict
 from app.db_models.workspaces import Workspace
@@ -23,6 +24,10 @@ class Connection(Base, ModelDict):
     status = Column(Enum('active', 'inactive', name='connection_status_enum'), server_default='active', nullable=False)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    source_instance = relationship("ActorInstance", foreign_keys=[source_instance_id])
+    generator_instance = relationship("ActorInstance", foreign_keys=[generator_instance_id])
+    destination_instance = relationship("ActorInstance", foreign_keys=[destination_instance_id])
 
     def __repr__(self):
         return f"<Connection(id='{self.id}', name='{self.name}', status='{self.status}')>"

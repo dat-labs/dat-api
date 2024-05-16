@@ -14,6 +14,7 @@ class Schedule(BaseModel):
     cron: Optional[Cron] = None
 
 
+
 class ConnectionBase(BaseModel):
     source_instance: ActorInstanceResponse
     generator_instance: ActorInstanceResponse
