@@ -254,3 +254,20 @@ async def get_actor_specs(
     except KeyError:
         print("unable to traverse to catalog['properties']['connection_specification']['properties']")
     return catalog
+
+
+@router.get("/{actor_id}/doc")
+async def get_actor_documentaion(
+    actor_id: str
+) -> str:
+    """
+    TODO: Change this to read from documentation url
+    """
+     # Read local markdown file (doc.md) and return it
+    # in a string format
+    # Construct the path to the documentation file
+    path = f"app/routers/doc.md"
+    with open(path, 'r') as file:
+        data = file.read()
+    
+    return data
