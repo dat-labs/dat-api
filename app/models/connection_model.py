@@ -4,6 +4,7 @@ from dat_core.pydantic_models import (
     DatCatalog,
     Connection as ConnectionPdModel
 )
+from .actor_instance_model import ActorInstanceResponse
 
 class Cron(BaseModel):
     cron_expression: str
@@ -14,6 +15,9 @@ class Schedule(BaseModel):
 
 
 class ConnectionBase(BaseModel):
+    source_instance: ActorInstanceResponse
+    generator_instance: ActorInstanceResponse
+    destination_instance: ActorInstanceResponse
     source_instance_id: str
     generator_instance_id: str
     destination_instance_id: str
@@ -30,6 +34,22 @@ class ConnectionBase(BaseModel):
 
 class ConnectionResponse(ConnectionBase):
     id: str
+    
+class ConnectionListResponse(BaseModel):
+    source_instance_id: str
+    generator_instance_id: str
+    destination_instance_id: str
+    workspace_id: str
+    name: str
+    namespace_format: str = "${SOURCE_NAMESPACE}"
+    prefix: Optional[str] = None
+    configuration: Optional[Dict] = None
+    catalog: Optional[DatCatalog] = None
+    schedule: Optional[Schedule] = None
+    schedule_type: Optional[str] = "manual"
+    status: Optional[str] = "active"
+    id: str
+
 
 class ConnectionPostRequest(ConnectionBase):
     pass

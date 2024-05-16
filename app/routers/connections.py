@@ -12,9 +12,10 @@ from app.database import get_db
 from app.common.utils import CustomModel
 from app.models.connection_model import (
     ConnectionResponse, ConnectionPostRequest,
-    ConnectionPutRequest, ConnectionOrchestraResponse
+    ConnectionPutRequest, ConnectionOrchestraResponse, ConnectionListResponse
 )
 from app.internal.connections import fetch_connection_config
+from app.routers.actor_instances import get_actor_instance
 
 app = Celery('tasks', broker='amqp://mq_user:mq_pass@message-queue:5672//')
 
@@ -26,11 +27,11 @@ router = APIRouter(
 
 
 @router.get("/list",
-            response_model=list[ConnectionResponse],
+            response_model=list[ConnectionListResponse],
             description="Fetch all active connections")
 async def fetch_available_connections(
         db=Depends(get_db)
-) -> list[ConnectionResponse]:
+) -> list[ConnectionListResponse]:
     """
     Fetches all active connections from the database.
 
@@ -63,9 +64,18 @@ async def read_connection(
         HTTPException: If the connection is not found.
     """
     connection = db.query(ConnectionModel).get(connection_id)
+    source_instance = get_actor_instance(db, connection.source_instance_id)
+    generator_instance = get_actor_instance(db, connection.generator_instance_id)
+    destination_instance = get_actor_instance(db, connection.destination_instance_id)
+    print(connection.to_dict())
     if connection is None:
         raise HTTPException(status_code=404, detail="Connection not found")
-    return connection
+    return ConnectionResponse(
+            **connection.to_dict(),
+            source_instance = source_instance,
+            generator_instance =  generator_instance,
+            destination_instance =  destination_instance,
+        )
 
 
 @router.post("",
@@ -101,13 +111,12 @@ async def create_connection(
 
 
 @router.put("/{connection_id}",
-            responses={403: {"description": "Operation forbidden"}},
-            response_model=ConnectionResponse)
+            responses={403: {"description": "Operation forbidden"}})
 async def update_connection(
     connection_id: str,
     payload: ConnectionPutRequest,
     db=Depends(get_db)
-) -> ConnectionResponse:
+):
     """
     Updates an existing connection.
 
