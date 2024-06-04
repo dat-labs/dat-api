@@ -17,6 +17,21 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+@router.get(
+    "/default",
+    response_model=WorkspaceResponse
+)
+async def get_default_workspace(
+    db=Depends(get_db)
+) -> WorkspaceResponse:
+    """
+    Fetches the default workspace.
+    """
+    workspace = db.query(WorkspaceModel).filter_by(
+        name="Default", status="active").first()
+    if workspace is None:
+        raise HTTPException(status_code=404, detail="Default workspace not found")
+    return workspace
 
 @router.get(
     "/list",
