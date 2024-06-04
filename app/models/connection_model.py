@@ -13,12 +13,12 @@ class Cron(BaseModel):
 class Schedule(BaseModel):
     cron: Optional[Cron] = None
 
-
-
-class ConnectionBase(BaseModel):
+class ConnectionExtraAtrributes(BaseModel):
     source_instance: ActorInstanceResponse
     generator_instance: ActorInstanceResponse
     destination_instance: ActorInstanceResponse
+
+class ConnectionBase(BaseModel):
     source_instance_id: str
     generator_instance_id: str
     destination_instance_id: str
@@ -33,9 +33,9 @@ class ConnectionBase(BaseModel):
     status: Optional[str] = "active"
 
 
-class ConnectionResponse(ConnectionBase):
+class ConnectionResponse(ConnectionBase, ConnectionExtraAtrributes):
     id: str
-    
+
 class ConnectionListResponse(BaseModel):
     source_instance_id: str
     generator_instance_id: str
