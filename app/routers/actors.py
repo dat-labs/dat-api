@@ -50,8 +50,7 @@ def fetch_available_actors_from_db(
         raise HTTPException(status_code=404, detail=str(e))
 
     if not actors:
-        raise HTTPException(
-            status_code=404, detail=f"No actors found for type {actor_type}")
+        return []
 
     return actors
 
