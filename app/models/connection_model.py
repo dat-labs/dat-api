@@ -56,6 +56,7 @@ class ConnectionPostRequest(ConnectionBase):
     pass
 
 class ConnectionPutRequest(BaseModel):
+    source_instance_id: str # needed to load CatalogClass to validate catalog
     name: Optional[str] = None
     namespace_format: Optional[str] = None
     prefix: Optional[str] = None

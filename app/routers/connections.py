@@ -1,4 +1,6 @@
+from importlib import import_module
 from celery import Celery
+import pydantic_core
 from fastapi import (
     APIRouter,
     Depends,
@@ -8,6 +10,7 @@ from app.db_models.connections import (
     Connection as ConnectionModel
 )
 from app.db_models.connection_run_logs import ConnectionRunLogs
+from app.db_models.actor_instances import ActorInstance as ActorInstanceModel
 from app.database import get_db
 from app.common.utils import CustomModel
 from app.models.connection_model import (
@@ -97,6 +100,14 @@ async def create_connection(
     Raises:
         HTTPException: If the operation is forbidden or an error occurs.
     """
+    # validating passed catalog against passed source_instance_id
+    actor_instance = db.query(ActorInstanceModel).get(payload.source_instance_id)
+    try:
+        validate_catalog(actor_instance, payload.catalog)    
+    except (pydantic_core._pydantic_core.ValidationError, 
+            ImportError, AttributeError) as _e:
+        raise HTTPException(status_code=403, detail=str(_e))
+
     try:
         connection_instance = ConnectionModel(
             **payload.model_dump(exclude={'catalog'}),
@@ -130,13 +141,22 @@ async def update_connection(
     Raises:
         HTTPException: If the connection is not found or an error occurs.
     """
+    # validating passed catalog against passed source_instance_id
+    actor_instance = db.query(ActorInstanceModel).get(payload.source_instance_id)
+    try:
+        validate_catalog(actor_instance, payload.catalog)    
+    except (pydantic_core._pydantic_core.ValidationError, 
+            ImportError, AttributeError) as _e:
+        raise HTTPException(status_code=403, detail=str(_e))
+
     try:
         connection_instance = db.query(ConnectionModel).get(connection_id)
         if connection_instance is None:
             raise HTTPException(status_code=404, detail="Connection not found")
 
-        print(payload.model_dump(exclude_unset=True))
         for key, value in payload.model_dump(exclude_unset=True).items():
+            if key in ['source_instance_id']:
+                continue
             setattr(connection_instance, key, value)
 
         db.add(connection_instance)
@@ -199,3 +219,31 @@ async def connection_trigger_run(\
     resp = await fetch_connection_config(connection_id)
     app.send_task('dat_worker_task', (resp.model_dump_json(), ), queue='dat-worker-q')
     return resp.model_dump()
+
+
+def validate_catalog(actor_instance, catalog):
+    """
+    Validates a catalog instance against the expected Catalog class for a given actor.
+
+    This function dynamically imports the Catalog class based on the `actor_type`, `module_name`,
+    and `name` attributes of the actor within the `actor_instance`. It then uses this Catalog
+    class to validate the provided `catalog` by calling its `model_validate_json` method with
+    the JSON representation of the catalog.
+
+    Args:
+        actor_instance: A db instance containing actor-related information, including `actor_type`,
+            `module_name`, and `name`.
+        catalog: The catalog instance to be validated.
+
+    Raises:
+        ImportError: If the specified module cannot be imported.
+        AttributeError: If the specified Catalog class cannot be found in the module.
+        pydantic_core._pydantic_core.ValidationError: If the catalog validation fails.
+
+    Returns:
+        None
+    """
+    CatalogClass = getattr(
+        import_module(f'verified_{actor_instance.actor.actor_type}s.{actor_instance.actor.module_name}.catalog'), f'{actor_instance.actor.name}Catalog')
+    CatalogClass.model_validate_json(catalog.model_dump_json())
+    
