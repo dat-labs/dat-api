@@ -21,9 +21,11 @@ from app.db_models.connection_run_logs import ConnectionRunLogs
 from app.models.connection_run_log_model import ConnectionRunLogResponse
 from app.database import get_db
 
+
 class DatMessageRequest(BaseModel):
     """Pydantic BaseModel for representing a request with DatMessage."""
     dat_message: DatMessage
+
 
 router = APIRouter(
     prefix="/connection-run-logs",
@@ -76,8 +78,8 @@ async def add_connection_run_log(
 
 
 @router.get("/{connection_id}/runs",
-             response_model=List[ConnectionRunLogResponse],
-             description="Get all runs for a given connection id")
+            response_model=List[ConnectionRunLogResponse],
+            description="Get all runs for a given connection id")
 async def get_connection_run_logs(
     connection_id: str,
     db=Depends(get_db)
@@ -125,8 +127,8 @@ async def get_connection_runs_by_run_id(
 
 
 @router.get("/{connection_id}/stream-states",
-             response_model=Dict[str, StreamState],
-             description="Get the latest stream states for a connection")
+            response_model=Dict[str, StreamState],
+            description="Get the latest stream states for a connection")
 async def get_combined_stream_states(
     connection_id: str,
     db=Depends(get_db)
@@ -149,3 +151,41 @@ async def get_combined_stream_states(
         import traceback
         print(traceback.format_exc())
         raise HTTPException(status_code=500, detail="Something went wrong")
+
+
+@router.get("/{connection_id}/agg-run-logs")
+async def get_agg_run_logs(
+    connection_id: str,
+    db=Depends(get_db)
+):
+    return {
+        "total_records": 10,
+        "page_number": 1,
+        "page_size": 10,
+        "from_datetime": "2021-09-01T00:00:00Z",
+        "to_datetime": "2021-09-01T23:59:59Z",
+        "records": [
+            {
+                "id": "1",
+                "status": "success",
+                "start_time": "2021-09-01T10:00:00Z",
+                "end_time": "2021-09-01T10:30:00Z",
+                "duration": "30 mins",
+                "size": "10 MB",
+                "documents_fetched": 1000,
+                "destination_record_updated": 1000,
+                "records_per_stream": [
+                    {
+                        "stream": "pdf",
+                        "documents_fetched": 500,
+                        "destination_record_updated": 500
+                    },
+                    {
+                        "stream": "csv",
+                        "documents_fetched": 500,
+                        "destination_record_updated": 500
+                    }
+                ]
+            },
+        ]
+    }
