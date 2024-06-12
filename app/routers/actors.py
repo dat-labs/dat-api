@@ -1,14 +1,18 @@
+import os
+import json
 from fastapi import (
     APIRouter,
     Depends,
     HTTPException
 )
+import requests
 from importlib import import_module
 from app.models.actor_model import (
     ActorResponse, ActorPostRequest, ActorPutRequest
 )
 from app.db_models.actors import Actor as ActorModel
 from app.database import get_db
+from app.config import GITBOOK_ACCESS_TOKEN, GITBOOK_SPACE_ID
 
 
 router = APIRouter(
@@ -22,7 +26,7 @@ router = APIRouter(
 def fetch_available_actors_from_db(
     actor_type: str = None,
     actor_id: str = None,
-    db = None
+    db=None
 ) -> list[ActorResponse]:
     """
     Fetches available actors from the database based on the provided filters.
@@ -56,9 +60,9 @@ def fetch_available_actors_from_db(
 
 
 @router.get(
-        "/{actor_type}/list",
-        response_model=list[ActorResponse],
-        description="Fetch all active actors"
+    "/{actor_type}/list",
+    response_model=list[ActorResponse],
+    description="Fetch all active actors"
 )
 async def fetch_available_actors(
     actor_type: str,
@@ -106,7 +110,7 @@ async def read_actor(
 async def create_actor(
     payload: ActorPostRequest,
     db=Depends(get_db)
-    ) -> ActorResponse:
+) -> ActorResponse:
     """
     Creates a new actor.
 
@@ -243,16 +247,65 @@ async def get_actor_specs(
 
 @router.get("/{actor_id}/doc")
 async def get_actor_documentaion(
-    actor_id: str
+    actor_id: str,
+    db=Depends(get_db)
 ) -> str:
-    """
-    TODO: Change this to read from documentation url
-    """
-     # Read local markdown file (doc.md) and return it
-    # in a string format
-    # Construct the path to the documentation file
-    path = f"app/routers/doc.md"
-    with open(path, 'r') as file:
-        data = file.read()
-    
-    return data
+    matching_actors = [
+        _ for _ in fetch_available_actors_from_db(actor_id=actor_id, db=db)
+        if _.id == actor_id
+    ]
+    if not matching_actors:
+        raise HTTPException(status_code=404, detail="actor not found")
+
+    actor = matching_actors[0]
+    SourceClass = getattr(
+        import_module(f'verified_{actor.actor_type}s.{actor.module_name}.{actor.actor_type}'), actor.name)
+
+    documentation_url = SourceClass().spec().get('properties', {}).get(
+        'documentation_url', {}).get('default', None)
+
+    if not documentation_url:
+        raise HTTPException(
+            status_code=404, detail="No documentation found for actor")
+
+    actor_type = f"{actor.actor_type}s"
+    actor_module = actor.module_name
+    page_path = f"integrations/{actor_type}/{actor.module_name}"
+
+    page_id = _get_page_id_by_content_path(actor_type, actor_module, page_path)
+
+    return _get_content_by_id(page_id)
+
+def _get_page_id_by_content_path(actor_type: str, actor_name: str, page_path: str) -> str:
+    top_path = "integrations"
+    url = f"https://api.gitbook.com/v1/spaces/{GITBOOK_SPACE_ID}/content/path/{top_path}?format=markdown"
+
+    headers = {
+        'Authorization': f'Bearer {GITBOOK_ACCESS_TOKEN}'
+    }
+    print(f"Fetching page ID for path {page_path}")
+    response = requests.request("GET", url, headers=headers)
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=404, detail="Content not found")
+
+    for item in response.json().get('pages', []):
+        if item.get('slug') == actor_type:
+            for sub_item in item.get('pages', []):
+                if sub_item.get('slug') == actor_name and sub_item.get('path') == page_path:
+                    return sub_item.get('id')
+
+def _get_content_by_id(page_id: str) -> str:
+    url = f"https://api.gitbook.com/v1/spaces/{GITBOOK_SPACE_ID}/content/page/{page_id}?format=markdown"
+
+    headers = {
+        'Authorization': f'Bearer {GITBOOK_ACCESS_TOKEN}'
+    }
+
+    print(f"Fetching content for page ID {page_id}")
+    response = requests.request("GET", url, headers=headers)
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=404, detail="Content not found")
+
+    return response.json().get('markdown', '')
