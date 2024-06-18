@@ -11,14 +11,17 @@ Functions:
     get_connection_run_logs: Endpoint for getting all runs for a given connection ID.
     get_connection_runs_by_run_id: Endpoint for getting run logs for a particular run ID.
 """
+import re
 import json
 from typing import List, Dict
+import pydantic_core
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import StatementError
 from pydantic import BaseModel
-from dat_core.pydantic_models import DatMessage, Type, DatStateMessage, StreamState
+from dat_core.pydantic_models import DatMessage, Type, DatStateMessage, StreamState, DatLogMessage
 from app.db_models.connection_run_logs import ConnectionRunLogs
 from app.models.connection_run_log_model import ConnectionRunLogResponse
+from app.models.agg_conn_run_log_model import AggConnRunLogResponse, AggConnRunLogRuns
 from app.database import get_db
 
 
@@ -94,7 +97,6 @@ async def get_connection_run_logs(
     Returns:
         List[ConnectionRunLogResponse]: A list of connection run logs for the given connection ID.
     """
-    db = list(get_db())[0]
     try:
         run_logs = db.query(ConnectionRunLogs).filter_by(
             connection_id=connection_id).all()
@@ -118,7 +120,6 @@ async def get_connection_runs_by_run_id(
     Returns:
         List[ConnectionRunLogResponse]: A list of connection run logs for the given run ID.
     """
-    db = list(get_db())[0]
     try:
         run_logs = db.query(ConnectionRunLogs).filter_by(run_id=run_id).all()
         return run_logs
@@ -133,7 +134,6 @@ async def get_combined_stream_states(
     connection_id: str,
     db=Depends(get_db)
 ) -> Dict[str, StreamState]:
-    db = list(get_db())[0]
     combined_states = {}
     try:
         state_msgs = db.query(ConnectionRunLogs).filter_by(
@@ -158,13 +158,57 @@ async def get_agg_run_logs(
     connection_id: str,
     db=Depends(get_db)
 ):
+    # casting to list to load to memory
+    conn_run_logs = db.query(ConnectionRunLogs).filter_by(
+        connection_id=connection_id).order_by(
+            ConnectionRunLogs.created_at.desc()).all()
+    
+    _runs_dct = {}
+    runs = []
+
+    for run_log in conn_run_logs:
+        run_id = run_log.run_id
+        if run_id not in _runs_dct:
+            _runs_dct[run_id] = []
+        _runs_dct[run_id].append(run_log)
+    
+    for run_id, run_logs in _runs_dct.items():
+        start_time = run_logs[-1].created_at
+        end_time = run_logs[0].updated_at
+        records_updated = 0
+        for run_log_msg in run_logs:
+            # print(run_id, records_updated)
+            try:
+                message = DatLogMessage(
+                    **json.loads(run_log_msg.message)).message
+            except pydantic_core._pydantic_core.ValidationError:
+                message = ''
+            match = re.search(r'\b\d+\b', message)
+            if match:
+                # print(run_log_msg)
+                records_updated += int(match.group(0))
+        run_res = AggConnRunLogRuns(
+            id=run_id,
+            start_time=start_time,
+            end_time=end_time,
+            duration=(end_time-start_time).seconds,
+            records_updated=records_updated,
+        )
+        runs.append(run_res)
+    
+    response = AggConnRunLogResponse(
+        connection_id=connection_id,
+        total_runs=len(_runs_dct.keys()),
+        runs=runs,
+    )
+    print('========', response)
     return {
-        "total_records": 10,
+        "total_runs": 10,
         "page_number": 1,
         "page_size": 10,
         "from_datetime": "2021-09-01T00:00:00Z",
         "to_datetime": "2021-09-01T23:59:59Z",
-        "records": [
+        "runs": [
             {
                 "id": "1",
                 "status": "success",
