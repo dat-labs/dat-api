@@ -9,13 +9,14 @@ from fastapi import (
 from app.db_models.connections import (
     Connection as ConnectionModel
 )
+from sqlalchemy.orm import joinedload
 from app.db_models.connection_run_logs import ConnectionRunLogs
 from app.db_models.actor_instances import ActorInstance as ActorInstanceModel
 from app.database import get_db
 from app.common.utils import CustomModel
 from app.models.connection_model import (
     ConnectionResponse, ConnectionPostRequest,
-    ConnectionPutRequest, ConnectionOrchestraResponse, ConnectionListResponse
+    ConnectionPutRequest, ConnectionOrchestraResponse
 )
 from app.internal.connections import fetch_connection_config
 from app.routers.actor_instances import get_actor_instance
@@ -30,19 +31,28 @@ router = APIRouter(
 
 
 @router.get("/list",
-            response_model=list[ConnectionListResponse],
+            response_model=list[ConnectionResponse],
             description="Fetch all active connections")
 async def fetch_available_connections(
         db=Depends(get_db)
-) -> list[ConnectionListResponse]:
+) -> list[ConnectionResponse]:
     """
-    Fetches all active connections from the database.
+    Fetches all active connections from the database, including related source, generator, and destination instances.
 
     Returns:
-        A list of active connections.
+        A list of active connections with related instances.
     """
     try:
-        connections = db.query(ConnectionModel).filter_by(status='active').all()
+        connections = (
+            db.query(ConnectionModel)
+            .filter_by(status='active')
+            .options(
+                joinedload(ConnectionModel.source_instance),
+                joinedload(ConnectionModel.generator_instance),
+                joinedload(ConnectionModel.destination_instance)
+            )
+            .all()
+        )
         return connections
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -52,7 +62,7 @@ async def fetch_available_connections(
             response_model=ConnectionResponse)
 async def read_connection(
     connection_id: str,
-    db=Depends(get_db)
+    db = Depends(get_db)
 ) -> ConnectionResponse:
     """
     Retrieves a connection by its ID.
@@ -66,19 +76,26 @@ async def read_connection(
     Raises:
         HTTPException: If the connection is not found.
     """
-    connection = db.query(ConnectionModel).get(connection_id)
-    source_instance = get_actor_instance(db, connection.source_instance_id)
-    generator_instance = get_actor_instance(db, connection.generator_instance_id)
-    destination_instance = get_actor_instance(db, connection.destination_instance_id)
-    print(connection.to_dict())
-    if connection is None:
-        raise HTTPException(status_code=404, detail="Connection not found")
-    return ConnectionResponse(
-            **connection.to_dict(),
-            source_instance = source_instance,
-            generator_instance =  generator_instance,
-            destination_instance =  destination_instance,
+    try:
+        # Use joinedload to eagerly load related instances
+        connection = (
+            db.query(ConnectionModel)
+            .filter_by(id=connection_id)
+            .options(
+                joinedload(ConnectionModel.source_instance),
+                joinedload(ConnectionModel.generator_instance),
+                joinedload(ConnectionModel.destination_instance)
+            )
+            .one_or_none()
         )
+
+        if connection is None:
+            raise HTTPException(status_code=404, detail="Connection not found")
+
+        return connection
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("",

@@ -13,7 +13,7 @@ class Cron(BaseModel):
 class Schedule(BaseModel):
     cron: Optional[Cron] = None
 
-class ConnectionExtraAtrributes(BaseModel):
+class ConnectionExtraAttributes(BaseModel):
     source_instance: ActorInstanceResponse
     generator_instance: ActorInstanceResponse
     destination_instance: ActorInstanceResponse
@@ -33,24 +33,8 @@ class ConnectionBase(BaseModel):
     status: Optional[str] = "active"
 
 
-class ConnectionResponse(ConnectionBase, ConnectionExtraAtrributes):
+class ConnectionResponse(ConnectionBase, ConnectionExtraAttributes):
     id: str
-
-class ConnectionListResponse(BaseModel):
-    source_instance_id: str
-    generator_instance_id: str
-    destination_instance_id: str
-    workspace_id: str
-    name: str
-    namespace_format: str = "${SOURCE_NAMESPACE}"
-    prefix: Optional[str] = None
-    configuration: Optional[Dict] = None
-    catalog: Optional[DatCatalog] = None
-    schedule: Optional[Schedule] = None
-    schedule_type: Optional[str] = "manual"
-    status: Optional[str] = "active"
-    id: str
-
 
 class ConnectionPostRequest(ConnectionBase):
     pass
