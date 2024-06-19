@@ -85,7 +85,7 @@ async def add_connection_run_log(
             description="Get all runs for a given connection id")
 async def get_connection_run_logs(
     connection_id: str,
-    db=Depends(get_db)
+    db=Depends(get_db),
 ) -> List[ConnectionRunLogResponse]:
     """
     Endpoint for getting all runs for a given connection ID.
@@ -109,7 +109,8 @@ async def get_connection_run_logs(
             response_model=List[ConnectionRunLogResponse],
             description="Get run logs for a particular run id")
 async def get_connection_runs_by_run_id(
-    run_id: str
+    run_id: str,
+    db=Depends(get_db),
 ) -> List[ConnectionRunLogResponse]:
     """
     Endpoint for getting run logs for a particular run ID.
