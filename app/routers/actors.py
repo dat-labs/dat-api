@@ -269,8 +269,8 @@ async def get_actor_documentaion(
             status_code=404, detail="No documentation found for actor")
 
     actor_type = f"{actor.actor_type}s"
-    actor_module = actor.module_name
-    page_path = f"integrations/{actor_type}/{actor.module_name}"
+    actor_module = actor.module_name.replace("_", "-")
+    page_path = f"integrations/{actor_type}/{actor_module}"
 
     page_id = _get_page_id_by_content_path(actor_type, actor_module, page_path)
 
