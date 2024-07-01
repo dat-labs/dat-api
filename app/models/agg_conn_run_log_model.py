@@ -1,5 +1,6 @@
 import datetime
-from typing import List
+from enum import Enum
+from typing import List, Optional
 from pydantic import BaseModel
 
 
@@ -9,12 +10,20 @@ class AggConnRunLogRunRecordsPerStream(BaseModel):
     records_updated: int
 
 
+class AggConnRunLogRunsStatus(Enum):
+    QUEUED = 'QUEUED'
+    RUNNING = 'RUNNING'
+    SUCCESS = 'SUCCESS'
+    FAILURE = 'FAILURE'
+    PARTIAL_SUCCESS = 'PARTIAL_SUCCESS'
+
+
 class AggConnRunLogRuns(BaseModel):
     id: str
-    # status: str  # TODO: Need to decide  where this value will get populated from
+    status: AggConnRunLogRunsStatus
     start_time: datetime.datetime
-    end_time: datetime.datetime
-    duration: int
+    end_time: Optional[datetime.datetime]
+    duration: Optional[int]
     # duration_human_readable: str
     # docs_size: int
     # docs_size_human_readable: str
