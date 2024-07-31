@@ -217,9 +217,8 @@ async def delete_connection(
 @router.post("/{connection_id}/run",
              response_model=ConnectionOrchestraResponse,
              description="Trigger the run for the connection")
-async def connection_trigger_run(\
-    connection_id: str,
-    db = Depends(get_db)
+async def connection_trigger_run(
+    connection_id: str
 ) -> ConnectionOrchestraResponse:
     """
     Triggers a run for the specified connection.

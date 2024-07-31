@@ -1,5 +1,6 @@
 import bcrypt
 from ...db_models.users import User as UserModel
+from ...db_models.workspace_users import WorkspaceUser
 from ...common.exceptions.exceptions import NotFound, Unauthorized
 
 class Users():
@@ -34,6 +35,19 @@ class Users():
         user = self.db_session.query(UserModel).filter(UserModel.email == email).first()
         if user:
             if bcrypt.checkpw(password.encode('utf-8'), user.password_hash.encode('utf-8')):
-                return user
+                # Fetch workspace_id from workspace_users table
+                workspace_user = self.db_session.query(WorkspaceUser).filter(WorkspaceUser.user_id == user.id).first()
+                if workspace_user:
+                    workspace_id = workspace_user.workspace_id
+                else:
+                    workspace_id = None
+
+                return {
+                    "id": user.id,
+                    "email": user.email,
+                    "workspace_id": workspace_id,
+                    "created_at": user.created_at,
+                    "updated_at": user.updated_at
+                }
             raise Unauthorized("Email and Password do not match")
         raise NotFound("User Not Found")
