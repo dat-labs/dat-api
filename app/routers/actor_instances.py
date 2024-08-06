@@ -1,10 +1,11 @@
 from fastapi import (
     APIRouter,
     Depends,
-    HTTPException
+    HTTPException,
+    Query
 )
 from importlib import import_module
-from typing import List
+from typing import List, Optional
 from dat_core.pydantic_models.connector_specification import ConnectorSpecification
 from app.db_models.actors import Actor as ActorModel
 from app.db_models.actor_instances import ActorInstance as ActorInstanceModel
@@ -13,7 +14,7 @@ from pydantic import ValidationError
 from app.database import get_db
 from app.models.actor_instance_model import (
     ActorInstanceResponse, ActorInstancePostRequest,
-    ActorInstancePutRequest, ActorInstanceGetResponse
+    ActorInstanceGetResponse, ActorInstancePutRequest,
 )
 
 
@@ -63,7 +64,8 @@ async def fetch_available_actor_instances(
 ) -> List[ActorInstanceGetResponse]:
     try:
         actor_instances = db.query(ActorInstanceModel).filter_by(
-            actor_type=actor_type).all()
+            actor_type=actor_type
+        ).order_by(ActorInstanceModel.created_at.desc()).all()
 
         for actor_instance in actor_instances:
             actor_instance.actor = db.query(ActorModel).get(actor_instance.actor_id)
@@ -106,104 +108,123 @@ async def read_actor_instance(
     return get_actor_instance(db, actor_instance_id)
 
 
-@router.post("",
-             responses={403: {"description": "Operation forbidden"}},
-             response_model=ActorInstanceResponse
+@router.post(
+    "/create_actor_instance",
+    responses={403: {"description": "Operation forbidden"}},
+    response_model=ActorInstanceResponse
 )
 async def create_actor_instance(
     payload: ActorInstancePostRequest,
-    db=Depends(get_db)
+    db = Depends(get_db)
 ) -> ActorInstanceResponse:
-    try:
-        db_actor_instance = ActorInstanceModel(
-            **payload.model_dump(exclude_unset=True)
-        )
-        db.add(db_actor_instance)
-        db.commit()
-        db.refresh(db_actor_instance)
-        return ActorInstanceResponse(
-            **db_actor_instance.to_dict(),
-            actor=db.query(ActorModel).get(db_actor_instance.actor_id).to_dict()
-        )
-    except ValidationError as e:
-        raise HTTPException(status_code=403, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=403, detail=str(e))
+    """
+    Create a new actor instance after testing the connection.
 
-@router.post(
-        "/test_and_save",
-        responses={403: {"description": "Operation forbidden"}},
-        response_model=ActorInstanceResponse
-)
-async def test_and_save_actor_instance(
-    payload: ActorInstancePostRequest,
-    db=Depends(get_db)
-) -> ActorInstanceResponse:
+    Args:
+        payload (ActorInstancePostRequest): The data for the new actor instance.
+        db (Session): The database session.
+
+    Returns:
+        ActorInstanceResponse: The created actor instance.
+
+    Raises:
+        HTTPException: If there is a validation error or an exception occurs.
+    """
     try:
-        db_actor_instance = ActorInstanceModel(
-            **payload.model_dump()
-        )
+        db_actor_instance = ActorInstanceModel(**payload.model_dump())
         db.add(db_actor_instance)
+
         # Test the connection
         actor = db.query(ActorModel).get(db_actor_instance.actor_id)
+        if actor is None:
+            raise HTTPException(status_code=404, detail="Actor not found")
+
         SourceClass = getattr(
-        import_module(f'verified_{actor.actor_type}s.{actor.module_name}.{actor.actor_type}'), actor.name)
+        import_module(
+            f'verified_{actor.actor_type}s.{actor.module_name}.{actor.actor_type}'),
+            actor.name
+        )
         config = ConnectorSpecification(
             name=actor.name,
             module_name=actor.module_name,
             connection_specification=db_actor_instance.configuration
         )
-        # assert isinstance(check_connection_tpl, DatConnectionStatus)
-        # assert check_connection_tpl.status.name == 'SUCCEEDED'
         check_connection_tpl = SourceClass().check(config)
-        if not check_connection_tpl.status.name == 'SUCCEEDED':
+        if check_connection_tpl.status.name != 'SUCCEEDED':
             raise HTTPException(status_code=403, detail=check_connection_tpl.message)
+
         db.commit()
         db.refresh(db_actor_instance)
+
         return ActorInstanceResponse(
             **db_actor_instance.to_dict(),
             actor=db.query(ActorModel).get(db_actor_instance.actor_id).to_dict()
         )
+
+    except ValidationError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=403, detail=str(e))
 
-@router.put(
-    "/{actor_instance_id}",
-    responses={403: {"description": "Operation forbidden"}},
+@router.patch(
+    "/update_actor_instance/{actor_instance_id}",
+    responses={403: {"description": "Operation forbidden"}, 404: {"description": "Actor instance not found"}},
     response_model=ActorInstanceResponse
 )
 async def update_actor_instance(
     actor_instance_id: str,
     payload: ActorInstancePutRequest,
-    db=Depends(get_db)
+    db = Depends(get_db)
 ) -> ActorInstanceResponse:
     """
-    Update an actor instance.
+    Update an existing actor instance after testing the connection.
 
     Args:
         actor_instance_id (str): The ID of the actor instance to update.
         payload (ActorInstancePutRequest): The updated data for the actor instance.
-        db (Database): The database session.
+        db (Session): The database session.
 
     Returns:
         ActorInstanceResponse: The updated actor instance.
 
     Raises:
-        HTTPException: If the actor instance is not found or if there
-        is a validation error or an exception occurs.
+        HTTPException: If the actor instance is not found, or if a validation error or exception occurs.
     """
     actor_instance = db.query(ActorInstanceModel).get(actor_instance_id)
     if actor_instance is None:
         raise HTTPException(status_code=404, detail="Actor instance not found")
+
     try:
+        # Update fields
         for key, value in payload.model_dump(exclude_unset=True).items():
             setattr(actor_instance, key, value)
+
+        # Test the connection with updated configuration
+        actor = db.query(ActorModel).get(actor_instance.actor_id)
+        if actor is None:
+            raise HTTPException(status_code=404, detail="Actor not found")
+
+        SourceClass = getattr(
+            import_module(f'verified_{actor.actor_type}s.{actor.module_name}.{actor.actor_type}'),
+            actor.name
+        )
+        config = ConnectorSpecification(
+            name=actor.name,
+            module_name=actor.module_name,
+            connection_specification=actor_instance.configuration
+        )
+        check_connection_tpl = SourceClass().check(config)
+        if check_connection_tpl.status.name != 'SUCCEEDED':
+            raise HTTPException(status_code=403, detail=check_connection_tpl.message)
+
         db.commit()
         db.refresh(actor_instance)
+
         return ActorInstanceResponse(
             **actor_instance.to_dict(),
             actor=db.query(ActorModel).get(actor_instance.actor_id).to_dict()
         )
+
     except ValidationError as e:
         raise HTTPException(status_code=403, detail=str(e))
     except Exception as e:

@@ -1,5 +1,5 @@
 from typing import Dict, Any, Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, root_validator
 from ..models.actor_model import ActorResponse
 
 

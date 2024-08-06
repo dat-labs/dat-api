@@ -784,6 +784,47 @@ test = ["certifi", "pretend", "pytest (>=6.2.0)", "pytest-benchmark", "pytest-co
 test-randomorder = ["pytest-randomly"]
 
 [[package]]
+name = "dat-cli"
+version = "0.1.0"
+description = "Command-line interface for backend database operations."
+optional = false
+python-versions = "^3.10"
+files = []
+develop = false
+
+[package.dependencies]
+click = "^8.1.7"
+dat-client = {git = "https://github.com/dat-labs/dat-api-sdk", rev = "main"}
+requests = "^2.31.0"
+
+[package.source]
+type = "git"
+url = "https://github.com/dat-labs/dat-cli"
+reference = "main"
+resolved_reference = "f20f39c6f894dfe7f750c213b022bb11b7f8a2e2"
+
+[[package]]
+name = "dat-client"
+version = "1.0.0"
+description = "FastAPI"
+optional = false
+python-versions = "^3.7"
+files = []
+develop = true
+
+[package.dependencies]
+pydantic = ">=2"
+python-dateutil = ">=2.8.2"
+typing-extensions = ">=4.7.1"
+urllib3 = ">= 1.25.3"
+
+[package.source]
+type = "git"
+url = "https://github.com/dat-labs/dat-api-sdk"
+reference = "main"
+resolved_reference = "fc086f1b71096b786743cc88f0c4a1d695eea690"
+
+[[package]]
 name = "dat-core"
 version = "0.1.0"
 description = "Core library for the dat project"
@@ -2419,6 +2460,29 @@ files = [
 ]
 
 [[package]]
+name = "psycopg"
+version = "3.2.1"
+description = "PostgreSQL database adapter for Python"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "psycopg-3.2.1-py3-none-any.whl", hash = "sha256:ece385fb413a37db332f97c49208b36cf030ff02b199d7635ed2fbd378724175"},
+    {file = "psycopg-3.2.1.tar.gz", hash = "sha256:dc8da6dc8729dacacda3cc2f17d2c9397a70a66cf0d2b69c91065d60d5f00cb7"},
+]
+
+[package.dependencies]
+typing-extensions = ">=4.4"
+tzdata = {version = "*", markers = "sys_platform == \"win32\""}
+
+[package.extras]
+binary = ["psycopg-binary (==3.2.1)"]
+c = ["psycopg-c (==3.2.1)"]
+dev = ["ast-comments (>=1.1.2)", "black (>=24.1.0)", "codespell (>=2.2)", "dnspython (>=2.1)", "flake8 (>=4.0)", "mypy (>=1.6)", "types-setuptools (>=57.4)", "wheel (>=0.37)"]
+docs = ["Sphinx (>=5.0)", "furo (==2022.6.21)", "sphinx-autobuild (>=2021.3.14)", "sphinx-autodoc-typehints (>=1.12)"]
+pool = ["psycopg-pool"]
+test = ["anyio (>=4.0)", "mypy (>=1.6)", "pproxy (>=2.7)", "pytest (>=6.2.5)", "pytest-cov (>=3.0)", "pytest-randomly (>=3.5)"]
+
+[[package]]
 name = "psycopg2-binary"
 version = "2.9.9"
 description = "psycopg2 - Python-PostgreSQL Database Adapter"
@@ -3523,7 +3587,9 @@ develop = true
 [package.dependencies]
 beautifulsoup4 = "^4.12.3"
 boto3 = "*"
+dat-cli = {git = "https://github.com/dat-labs/dat-cli", rev = "main"}
 dat-core = {git = "https://github.com/dat-labs/dat-core", rev = "main"}
+psycopg = "^3.1.19"
 
 [package.extras]
 wikipedia = []
@@ -3532,7 +3598,7 @@ wikipedia = []
 type = "git"
 url = "https://github.com/dat-labs/verified-sources"
 reference = "main"
-resolved_reference = "64f4665b3a4f3b796a882d3b342a93fd2fda3d1c"
+resolved_reference = "4fec001cc0d328268196699f83e0f9cc46369dd1"
 
 [[package]]
 name = "vine"

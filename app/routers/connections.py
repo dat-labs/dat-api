@@ -51,6 +51,7 @@ async def fetch_available_connections(
                 joinedload(ConnectionModel.generator_instance),
                 joinedload(ConnectionModel.destination_instance)
             )
+            .order_by(ConnectionModel.created_at.desc())
             .all()
         )
         return connections
