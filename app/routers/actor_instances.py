@@ -109,7 +109,7 @@ async def read_actor_instance(
 
 
 @router.post(
-    "/create_actor_instance",
+    "",
     responses={403: {"description": "Operation forbidden"}},
     response_model=ActorInstanceResponse
 )
@@ -167,7 +167,7 @@ async def create_actor_instance(
         raise HTTPException(status_code=403, detail=str(e))
 
 @router.patch(
-    "/update_actor_instance/{actor_instance_id}",
+    "/{actor_instance_id}",
     responses={403: {"description": "Operation forbidden"}, 404: {"description": "Actor instance not found"}},
     response_model=ActorInstanceResponse
 )
