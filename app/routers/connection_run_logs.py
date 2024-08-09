@@ -195,9 +195,7 @@ async def get_agg_run_logs(
             end_time = datetime.fromtimestamp(
                 get_emitted_at_from_conn_run_log(run_logs[0]))
             duration = (end_time-start_time).seconds
-        pattern = r"Processed \{\('([^']+)', '([^']+)'\): (\d+)\} document chunks\."
-        records_updated = get_int_from_list_using_obscure_regex(
-            run_logs, pattern, match_group=3)
+        records_updated = get_int_from_list(run_logs)
 
         status = AggConnRunLogRunsStatus.RUNNING
         if has_job_ended:
@@ -268,15 +266,12 @@ async def get_agg_run_logs(
     }
 
 
-def get_int_from_list_using_obscure_regex(
-        run_logs: List, pattern: str, match_group: int) -> int:
-    '''
-    1723199520.600807 | INFO | Processed {('s3-pdf', 'menu_items'): 10, ('pgsql-pinecone', 'restaurant_reviews'): 10} document chunks.
-    '''
+def get_int_from_list(run_logs: List) -> int:
+    ''''''
     rec_upd8d = 0
     for run_log in run_logs:
         try:
-            rec_upd8d = json.loads(run_log.message).get('n_docs_processed', 0)
+            rec_upd8d += json.loads(json.loads(run_log.message).get('message', '{}')).get('n_docs_processed', 0)
         except json.decoder.JSONDecodeError:
             pass
     return rec_upd8d
