@@ -144,10 +144,16 @@ async def get_combined_stream_states(
         for _state_msg in state_msgs:
             _state_msg = DatStateMessage(**json.loads(_state_msg.message))
             if _state_msg.stream.namespace not in combined_states:
-                combined_states[_state_msg.stream.namespace] = _state_msg.stream_state
-            elif combined_states[_state_msg.stream.namespace].emitted_at < _state_msg.stream_state.emitted_at:
-                combined_states[_state_msg.stream.namespace] = _state_msg.stream_state
-        return combined_states
+                combined_states[_state_msg.stream.namespace] = {
+                    'stream_state': _state_msg.stream_state, 
+                    'emitted_at': _state_msg.emitted_at
+                }
+            elif combined_states[_state_msg.stream.namespace]['emitted_at'] < _state_msg.emitted_at:
+                combined_states[_state_msg.stream.namespace] = {
+                    'stream_state': _state_msg.stream_state, 
+                    'emitted_at': _state_msg.emitted_at
+                }
+        return {_k: _v['stream_state'] for _k, _v in combined_states.items()}
     except StatementError as exc:
         raise HTTPException(status_code=500, detail=repr(exc))
     except Exception as exc:
