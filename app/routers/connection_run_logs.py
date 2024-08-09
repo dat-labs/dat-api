@@ -125,6 +125,7 @@ async def get_connection_runs_by_run_id(
     """
     try:
         run_logs = db.query(ConnectionRunLogs).filter_by(run_id=run_id).all()
+        run_logs.sort(key=get_emitted_at_from_conn_run_log)
         return run_logs
     except Exception as e:
         raise HTTPException(status_code=403, detail=str(e))
