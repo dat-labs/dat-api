@@ -284,7 +284,7 @@ def get_emitted_at_from_conn_run_log(conn_run_log: ConnectionRunLogs) -> int:
         return 0
     except pydantic_core._pydantic_core.ValidationError:
         try:
-            return json.loads(conn_run_log.message)['stream_state']['emitted_at']
+            return json.loads(conn_run_log.message)['emitted_at']
         except KeyError:
             print(f'KeyError: {conn_run_log.message}')
             return 0
