@@ -143,13 +143,13 @@ async def get_combined_stream_states(
             connection_id=connection_id, message_type='STATE')
         for _state_msg in state_msgs:
             _state_msg = DatStateMessage(**json.loads(_state_msg.message))
-            if _state_msg.stream.namespace not in combined_states:
-                combined_states[_state_msg.stream.namespace] = {
+            if _state_msg.stream.name not in combined_states:
+                combined_states[_state_msg.stream.name] = {
                     'stream_state': _state_msg.stream_state, 
                     'emitted_at': _state_msg.emitted_at
                 }
-            elif combined_states[_state_msg.stream.namespace]['emitted_at'] < _state_msg.emitted_at:
-                combined_states[_state_msg.stream.namespace] = {
+            elif combined_states[_state_msg.stream.name]['emitted_at'] < _state_msg.emitted_at:
+                combined_states[_state_msg.stream.name] = {
                     'stream_state': _state_msg.stream_state, 
                     'emitted_at': _state_msg.emitted_at
                 }
@@ -270,13 +270,15 @@ async def get_agg_run_logs(
 
 def get_int_from_list_using_obscure_regex(
         run_logs: List, pattern: str, match_group: int) -> int:
-    ''''''
+    '''
+    1723199520.600807 | INFO | Processed {('s3-pdf', 'menu_items'): 10, ('pgsql-pinecone', 'restaurant_reviews'): 10} document chunks.
+    '''
     rec_upd8d = 0
     for run_log in run_logs:
-        match = re.search(pattern, run_log.message)
-        if match:
-            # print(f'rec_upd8d: {rec_upd8d}, {match.group(3)}')
-            rec_upd8d += int(match.group(match_group))
+        try:
+            rec_upd8d = json.loads(run_log.message).get('n_docs_processed', 0)
+        except json.decoder.JSONDecodeError:
+            pass
     return rec_upd8d
 
 
