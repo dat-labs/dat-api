@@ -144,6 +144,8 @@ async def get_combined_stream_states(
             connection_id=connection_id, message_type='STATE')
         for _state_msg in state_msgs:
             _state_msg = DatStateMessage(**json.loads(_state_msg.message))
+            if not _state_msg.stream_state.data:
+                continue
             if _state_msg.stream.name not in combined_states:
                 combined_states[_state_msg.stream.name] = {
                     'stream_state': _state_msg.stream_state, 
