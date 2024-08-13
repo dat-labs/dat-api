@@ -1,5 +1,3 @@
-import os
-import json
 from fastapi import (
     APIRouter,
     Depends,
@@ -8,7 +6,8 @@ from fastapi import (
 import requests
 from importlib import import_module
 from app.models.actor_model import (
-    ActorResponse, ActorPostRequest, ActorPutRequest
+    ActorResponse, ActorPostRequest,
+    ActorPutRequest
 )
 from app.db_models.actors import Actor as ActorModel
 from app.database import get_db
@@ -245,55 +244,52 @@ async def get_actor_specs(
     return SourceClass().spec()
 
 
-@router.get("/{actor_id}/doc")
+@router.get("/doc/")
 async def get_actor_documentaion(
-    actor_id: str,
-    db=Depends(get_db)
+    path: str,
 ) -> str:
-    matching_actors = [
-        _ for _ in fetch_available_actors_from_db(actor_id=actor_id, db=db)
-        if _.id == actor_id
-    ]
-    if not matching_actors:
-        raise HTTPException(status_code=404, detail="actor not found")
+    """
+    Retrieves the documentation for an actor.
 
-    actor = matching_actors[0]
-    SourceClass = getattr(
-        import_module(f'verified_{actor.actor_type}s.{actor.module_name}.{actor.actor_type}'), actor.name)
+    Args:
+        path (str): The path to the actor documentation.
 
-    documentation_url = SourceClass().spec().get('properties', {}).get(
-        'documentation_url', {}).get('default', None)
-
-    if not documentation_url:
-        raise HTTPException(
-            status_code=404, detail="No documentation found for actor")
-
-    actor_type = f"{actor.actor_type}s"
-    actor_module = actor.module_name.replace("_", "-")
-    page_path = f"integrations/{actor_type}/{actor_module}"
-
-    page_id = _get_page_id_by_content_path(actor_type, actor_module, page_path)
+    Returns:
+        str: The documentation for the actor.
+    """
+    print(f"Fetching documentation for path {path}")
+    page_id = _get_page_id_by_path(path)
 
     return _get_content_by_id(page_id)
 
-def _get_page_id_by_content_path(actor_type: str, actor_name: str, page_path: str) -> str:
+def _get_page_id_by_path(page_path: str) -> str:
     top_path = "integrations"
     url = f"https://api.gitbook.com/v1/spaces/{GITBOOK_SPACE_ID}/content/path/{top_path}?format=markdown"
 
     headers = {
         'Authorization': f'Bearer {GITBOOK_ACCESS_TOKEN}'
     }
-    print(f"Fetching page ID for path {page_path}")
+    # combine top path with the provided path
+    combined_path = f"{top_path}/{page_path}"
+    print(f"Fetching page ID for path {combined_path}")
     response = requests.request("GET", url, headers=headers)
 
     if response.status_code != 200:
         raise HTTPException(status_code=404, detail="Content not found")
 
+    page_path_parts = page_path.split('/')
+    actor_type = page_path_parts[0]
+    actor_name = page_path_parts[1]
+
     for item in response.json().get('pages', []):
         if item.get('slug') == actor_type:
             for sub_item in item.get('pages', []):
-                if sub_item.get('slug') == actor_name and sub_item.get('path') == page_path:
+                if sub_item.get('slug') == actor_name and sub_item.get('path') == combined_path:
                     return sub_item.get('id')
+                elif sub_item.get('slug') == actor_name:
+                    for sub_sub_item in sub_item.get('pages', []):
+                        if sub_sub_item.get('path') == combined_path:
+                            return sub_sub_item.get('id')
 
 def _get_content_by_id(page_id: str) -> str:
     url = f"https://api.gitbook.com/v1/spaces/{GITBOOK_SPACE_ID}/content/page/{page_id}?format=markdown"
