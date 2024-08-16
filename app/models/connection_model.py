@@ -9,6 +9,7 @@ from .actor_instance_model import ActorInstanceResponse
 class Cron(BaseModel):
     cron_expression: str
     timezone: Optional[str] = None
+    advanced_scheduling: Optional[str] = None
 
 class Schedule(BaseModel):
     cron: Optional[Cron] = None

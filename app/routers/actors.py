@@ -264,15 +264,12 @@ async def get_actor_documentaion(
 
 def _get_page_id_by_path(page_path: str) -> str:
     top_path = "integrations"
-    url = f"https://api.gitbook.com/v1/spaces/{GITBOOK_SPACE_ID}/content/path/{top_path}?format=markdown"
+    url = f"https://dat-serve-gitbook.riju.tech/v1/spaces/{GITBOOK_SPACE_ID}/content/path/{top_path}"
 
-    headers = {
-        'Authorization': f'Bearer {GITBOOK_ACCESS_TOKEN}'
-    }
     # combine top path with the provided path
     combined_path = f"{top_path}/{page_path}"
     print(f"Fetching page ID for path {combined_path}")
-    response = requests.request("GET", url, headers=headers)
+    response = requests.request("GET", url)
 
     if response.status_code != 200:
         raise HTTPException(status_code=404, detail="Content not found")
@@ -292,14 +289,10 @@ def _get_page_id_by_path(page_path: str) -> str:
                             return sub_sub_item.get('id')
 
 def _get_content_by_id(page_id: str) -> str:
-    url = f"https://api.gitbook.com/v1/spaces/{GITBOOK_SPACE_ID}/content/page/{page_id}?format=markdown"
-
-    headers = {
-        'Authorization': f'Bearer {GITBOOK_ACCESS_TOKEN}'
-    }
+    url = f"https://dat-serve-gitbook.riju.tech/v1/spaces/{GITBOOK_SPACE_ID}/content/page/{page_id}"
 
     print(f"Fetching content for page ID {page_id}")
-    response = requests.request("GET", url, headers=headers)
+    response = requests.request("GET", url)
 
     if response.status_code != 200:
         raise HTTPException(status_code=404, detail="Content not found")
