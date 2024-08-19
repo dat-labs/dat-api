@@ -11,7 +11,7 @@ from app.models.actor_model import (
 )
 from app.db_models.actors import Actor as ActorModel
 from app.database import get_db
-from app.config import GITBOOK_ACCESS_TOKEN, GITBOOK_SPACE_ID
+from app.config import GITBOOK_SPACE_ID
 
 
 router = APIRouter(
