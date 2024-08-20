@@ -64,7 +64,8 @@ async def fetch_available_actor_instances(
 ) -> List[ActorInstanceGetResponse]:
     try:
         actor_instances = db.query(ActorInstanceModel).filter_by(
-            actor_type=actor_type
+            actor_type=actor_type,
+            status="active"
         ).order_by(ActorInstanceModel.created_at.desc()).all()
 
         for actor_instance in actor_instances:

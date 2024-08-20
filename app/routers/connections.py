@@ -45,7 +45,7 @@ async def fetch_available_connections(
     try:
         connections = (
             db.query(ConnectionModel)
-            .filter_by(status='active')
+            .filter(ConnectionModel.status.in_(["active", "inactive"]))
             .options(
                 joinedload(ConnectionModel.source_instance),
                 joinedload(ConnectionModel.generator_instance),
