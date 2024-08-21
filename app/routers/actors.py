@@ -297,4 +297,4 @@ def _get_content_by_id(page_id: str) -> str:
     if response.status_code != 200:
         raise HTTPException(status_code=404, detail="Content not found")
 
-    return response.json().get('markdown', '')
+    return response.json().get('markdown')
