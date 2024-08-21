@@ -8,7 +8,7 @@ class Users():
     """
     Class for user-related operations.
     """
-    
+
     def __init__(self, db_session):
         """
         Initializes the Users object with a database session.
@@ -17,7 +17,7 @@ class Users():
         - db_session: SQLAlchemy database session.
         """
         self.db_session = db_session
-        
+
     def verify_user(self, email, password):
         """
         Verify user credentials.
@@ -56,3 +56,16 @@ class Users():
                 }
             raise Unauthorized("Email and Password do not match")
         raise NotFound("User Not Found")
+
+    def fetch_users(self):
+        """
+        Fetch all users.
+
+        Returns:
+        - list: List of all users.
+        """
+        try:
+            users = self.db_session.query(UserModel).all()
+            return users
+        except Exception as e:
+            raise NotFound(str(e))

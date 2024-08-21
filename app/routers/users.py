@@ -1,6 +1,3 @@
-import yaml
-from datetime import datetime
-import urllib.request
 from fastapi import (APIRouter)
 from ..services.users import user_service_dependency
 from ..services.users.users import Users
@@ -33,4 +30,15 @@ async def verify_user(user: UserRequestModel, service: Users = user_service_depe
     """
     return service.verify_user(user.email, user.password)
 
+@router.get("/list")
+async def fetch_users(service: Users = user_service_dependency):
+    """
+    Fetch all users.
 
+    Parameters:
+    - service (Users): Instance of the Users service.
+
+    Returns:
+    - list: List of all users.
+    """
+    return service.fetch_users()
