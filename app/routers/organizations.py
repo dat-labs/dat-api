@@ -111,12 +111,11 @@ async def update_organization(
 
 @router.delete(
     "/{organization_id}",
-    response_model=OrganizationResponse
 )
 async def delete_organization(
     organization_id: str,
     db=Depends(get_db)
-) -> OrganizationResponse:
+) -> None:
     """
     Deletes an organization.
 
@@ -134,7 +133,6 @@ async def delete_organization(
         if organization:
             db.delete(organization)
             db.commit()
-            return organization
         raise HTTPException(status_code=404, detail="Organization Not Found")
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))

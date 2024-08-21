@@ -5,11 +5,11 @@ from pydantic import BaseModel
 class OrganizationBase(BaseModel):
     name: str
     status: str
-    created_at: Optional[datetime]
-    updated_at: Optional[datetime]
 
 class OrganizationResponse(OrganizationBase):
     id: str
+    created_at: datetime
+    updated_at: datetime
 
 class OrganizationPostRequest(OrganizationBase):
     pass
