@@ -221,10 +221,16 @@ async def update_actor_instance(
 
         db.commit()
         db.refresh(actor_instance)
-
+        connected_connections = [
+            connection.to_dict()
+            for connection in db.query(ConnectionModel).filter_by(
+                **{ACTOR_TYPE_ID_MAP[actor.actor_type]: actor_instance.id}
+            ).all()
+        ]
         return ActorInstanceResponse(
             **actor_instance.to_dict(),
-            actor=db.query(ActorModel).get(actor_instance.actor_id).to_dict()
+            actor=db.query(ActorModel).get(actor_instance.actor_id).to_dict(),
+            connected_connections=connected_connections
         )
 
     except ValidationError as e:
