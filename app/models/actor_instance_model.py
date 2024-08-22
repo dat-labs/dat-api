@@ -33,7 +33,4 @@ class ActorInstancePutRequest(BaseModel):
 class ActorInstanceResponse(ActorInstanceBase):
     id: str
     actor: ActorResponse = None
-
-
-class ActorInstanceGetResponse(ActorInstanceResponse):
     connected_connections: List[object] = []

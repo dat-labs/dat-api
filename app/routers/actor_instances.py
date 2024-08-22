@@ -14,7 +14,7 @@ from pydantic import ValidationError
 from app.database import get_db
 from app.models.actor_instance_model import (
     ActorInstanceResponse, ActorInstancePostRequest,
-    ActorInstanceGetResponse, ActorInstancePutRequest,
+    ActorInstancePutRequest,
 )
 
 
@@ -41,7 +41,7 @@ def get_actor_instance(db, actor_instance_id: str):
         ).all()
     ]
 
-    return ActorInstanceGetResponse(
+    return ActorInstanceResponse(
         **actor_instance.to_dict(),
         actor=_actor.to_dict(),
         connected_connections=connected_connections
@@ -55,13 +55,13 @@ ACTOR_TYPE_ID_MAP = {
 
 @router.get(
         "/{actor_type}/list",
-        response_model=list[ActorInstanceGetResponse],
+        response_model=list[ActorInstanceResponse],
         description="Fetch all active actors"
 )
 async def fetch_available_actor_instances(
     actor_type: str,
     db=Depends(get_db)
-) -> List[ActorInstanceGetResponse]:
+) -> List[ActorInstanceResponse]:
     try:
         actor_instances = db.query(ActorInstanceModel).filter_by(
             actor_type=actor_type,
@@ -84,12 +84,12 @@ async def fetch_available_actor_instances(
 
 @router.get(
         "/{actor_instance_id}",
-        response_model=ActorInstanceGetResponse
+        response_model=ActorInstanceResponse
 )
 async def read_actor_instance(
     actor_instance_id: str,
     db=Depends(get_db)
-) -> ActorInstanceGetResponse:
+) -> ActorInstanceResponse:
     # actor_instance = db.query(ActorInstanceModel).get(actor_instance_id)
     # if actor_instance is None:
     #     raise HTTPException(status_code=404, detail="Actor instance not found")
@@ -159,7 +159,8 @@ async def create_actor_instance(
 
         return ActorInstanceResponse(
             **db_actor_instance.to_dict(),
-            actor=db.query(ActorModel).get(db_actor_instance.actor_id).to_dict()
+            actor=db.query(ActorModel).get(db_actor_instance.actor_id).to_dict(),
+            connected_connections=[]
         )
 
     except ValidationError as e:
