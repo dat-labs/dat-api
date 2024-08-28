@@ -1,5 +1,5 @@
-from fastapi import APIRouter, HTTPException
-from fastapi import Path
+from fastapi import APIRouter, HTTPException, Path, Query
+from sqlalchemy.orm import joinedload
 from dat_core.pydantic_models import ConnectorSpecification
 from ..database import get_db
 from ..db_models.connections import Connection as ConnectionModel
@@ -18,20 +18,28 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-async def get_connection_orchestra_response(connection_id: str) -> ConnectionOrchestraResponse:
+async def get_connection_orchestra_response(connection_id: str, workspace_id: str) -> ConnectionOrchestraResponse:
     db_session = list(get_db())[0]
-    connection = db_session.query(ConnectionModel).get(connection_id)
+
+    # Fetch the connection and scope it by workspace_id
+    connection = db_session.query(ConnectionModel).filter_by(id=connection_id, workspace_id=workspace_id).one_or_none()
     if connection is None:
         raise HTTPException(status_code=404, detail="Connection not found")
 
-    _source = db_session.query(ActorInstanceModel).get(connection.source_instance_id)
-    _generator = db_session.query(ActorInstanceModel).get(connection.generator_instance_id)
-    _destination = db_session.query(ActorInstanceModel).get(connection.destination_instance_id)
+    # Fetch related instances and scope them by workspace_id
+    _source = db_session.query(ActorInstanceModel).filter_by(id=connection.source_instance_id, workspace_id=workspace_id).one_or_none()
+    _generator = db_session.query(ActorInstanceModel).filter_by(id=connection.generator_instance_id, workspace_id=workspace_id).one_or_none()
+    _destination = db_session.query(ActorInstanceModel).filter_by(id=connection.destination_instance_id, workspace_id=workspace_id).one_or_none()
 
+    if not _source or not _generator or not _destination:
+        raise HTTPException(status_code=404, detail="One or more related instances not found")
+
+    # Fetch actors
     source_actor = db_session.query(ActorModel).get(_source.actor_id)
     generator_actor = db_session.query(ActorModel).get(_generator.actor_id)
     destination_actor = db_session.query(ActorModel).get(_destination.actor_id)
 
+    # Prepare actor dictionaries
     source_actor_dct = {
         "name": source_actor.name,
         "module_name": source_actor.module_name,
@@ -59,9 +67,10 @@ async def get_connection_orchestra_response(connection_id: str) -> ConnectionOrc
             response_model=ConnectionOrchestraResponse,
             description="Fetch connection configuration for orchestra")
 async def fetch_connection_config(
-    connection_id: str = Path(..., description="The ID of the connection to fetch")
+    connection_id: str = Path(..., description="The ID of the connection to fetch"),
+    workspace_id: str = Query(..., description="The workspace ID of the connection"),
 ) -> ConnectionOrchestraResponse:
     try:
-        return await get_connection_orchestra_response(connection_id)
+        return await get_connection_orchestra_response(connection_id, workspace_id)
     except Exception as e:
         raise APIError(status_code=500, message=str(e))

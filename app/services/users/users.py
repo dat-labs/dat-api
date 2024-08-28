@@ -3,6 +3,7 @@ from ...db_models.users import User as UserModel
 from ...db_models.workspace_users import WorkspaceUser
 from ...db_models.workspaces import Workspace
 from ...common.exceptions.exceptions import NotFound, Unauthorized
+from app.models.user_model import UserResponse
 
 class Users():
     """
@@ -69,3 +70,59 @@ class Users():
             return users
         except Exception as e:
             raise NotFound(str(e))
+
+    def create_user(self, email, password):
+        """
+        Create a new user.
+
+        Parameters:
+        - email (str): Email of the user to create.
+        - password (str): Password of the user to create (hashed or plain).
+
+        Returns:
+        - dict: Dictionary containing user information.
+        """
+        if not is_hashed(password):
+            password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        user = UserModel(email=email, password_hash=password)
+        self.db_session.add(user)
+        self.db_session.commit()
+        return UserResponse(
+            id=user.id,
+            email=user.email,
+            password_hash=user.password_hash,
+            created_at=user.created_at,
+            updated_at=user.updated_at
+        )
+
+    def update_user(self, user_id, email, password):
+        """
+        Update a user.
+
+        Parameters:
+        - user_id (str): ID of the user to update.
+        - email (str): Email of the user to update.
+        - password (str): Password of the user to update (hashed or plain).
+
+        Returns:
+        - dict: Dictionary containing updated user information.
+        """
+        user = self.db_session.query(UserModel).get(user_id)
+        if user:
+            if not is_hashed(password):
+                password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            user.email = email
+            user.password_hash = password
+            self.db_session.commit()
+            return UserResponse(
+                id=user.id,
+                email=user.email,
+                password_hash=user.password_hash,
+                created_at=user.created_at,
+                updated_at=user.updated_at
+            )
+        raise NotFound("User Not Found")
+
+def is_hashed(password: str) -> bool:
+    """Check if the password is hashed."""
+    return password.startswith('$2b$') or password.startswith('$2a$') and len(password) == 60

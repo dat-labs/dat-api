@@ -25,14 +25,13 @@ router = APIRouter(
     # dependencies=[Depends(get_db)]
 )
 
-def get_actor_instance(db, actor_instance_id: str):
-    '''
-    Function to get actor instance for an actor_id.
-    TODO: refactor the code for routers into a seperate service class
-    '''
-    actor_instance = db.query(ActorInstanceModel).get(actor_instance_id)
+def get_actor_instance(db, actor_instance_id: str, workspace_id: str):
+    actor_instance = db.query(ActorInstanceModel).filter_by(
+        id=actor_instance_id, workspace_id=workspace_id  # Scope by workspace_id
+    ).first()
     if actor_instance is None:
         raise HTTPException(status_code=404, detail="Actor instance not found")
+
     _actor = db.query(ActorModel).get(actor_instance.actor_id)
     connected_connections = [
         connection.to_dict()
@@ -56,15 +55,27 @@ ACTOR_TYPE_ID_MAP = {
 @router.get(
         "/{actor_type}/list",
         response_model=list[ActorInstanceResponse],
-        description="Fetch all active actors"
+        description="Fetch all active actors in the workspace"
 )
 async def fetch_available_actor_instances(
     actor_type: str,
+    workspace_id: str = Query(..., description="The workspace ID to scope the request"),
     db=Depends(get_db)
 ) -> List[ActorInstanceResponse]:
+    """
+    Fetches all active actors from the database.
+
+    Args:
+        actor_type: The type of actor to fetch.
+        workspace_id: The ID of the workspace.
+    
+    Returns:
+        A list of active actors with related instances.
+    """
     try:
         actor_instances = db.query(ActorInstanceModel).filter_by(
             actor_type=actor_type,
+            workspace_id=workspace_id,  # Scope by workspace_id
             status="active"
         ).order_by(ActorInstanceModel.created_at.desc()).all()
 
@@ -88,25 +99,10 @@ async def fetch_available_actor_instances(
 )
 async def read_actor_instance(
     actor_instance_id: str,
+    workspace_id: str = Query(..., description="The workspace ID to scope the request"),
     db=Depends(get_db)
 ) -> ActorInstanceResponse:
-    # actor_instance = db.query(ActorInstanceModel).get(actor_instance_id)
-    # if actor_instance is None:
-    #     raise HTTPException(status_code=404, detail="Actor instance not found")
-    # _actor = db.query(ActorModel).get(actor_instance.actor_id)
-    # connected_connections = [
-    #     connection.to_dict()
-    #     for connection in db.query(ConnectionModel).filter_by(
-    #         **{ACTOR_TYPE_ID_MAP[_actor.actor_type]: actor_instance.id}
-    #     ).all()
-    # ]
-
-    # return ActorInstanceGetResponse(
-    #     **actor_instance.to_dict(),
-    #     actor=_actor.to_dict(),
-    #     connected_connections=connected_connections
-    # )
-    return get_actor_instance(db, actor_instance_id)
+    return get_actor_instance(db, actor_instance_id, workspace_id)
 
 
 @router.post(
@@ -116,23 +112,22 @@ async def read_actor_instance(
 )
 async def create_actor_instance(
     payload: ActorInstancePostRequest,
-    db = Depends(get_db)
+    workspace_id: str = Query(..., description="The workspace ID to scope the request"),
+    db=Depends(get_db)
 ) -> ActorInstanceResponse:
     """
     Create a new actor instance after testing the connection.
 
     Args:
-        payload (ActorInstancePostRequest): The data for the new actor instance.
+        payload (ActorInstancePostRequest): The data for the actor instance.
+        workspace_id (str): The ID of the workspace.
         db (Session): The database session.
-
+    
     Returns:
         ActorInstanceResponse: The created actor instance.
-
-    Raises:
-        HTTPException: If there is a validation error or an exception occurs.
     """
     try:
-        db_actor_instance = ActorInstanceModel(**payload.model_dump())
+        db_actor_instance = ActorInstanceModel(**payload.model_dump(), workspace_id=workspace_id)
         db.add(db_actor_instance)
 
         # Test the connection
@@ -141,8 +136,8 @@ async def create_actor_instance(
             raise HTTPException(status_code=404, detail="Actor not found")
 
         SourceClass = getattr(
-        import_module(
-            f'verified_{actor.actor_type}s.{actor.module_name}.{actor.actor_type}'),
+            import_module(
+                f'verified_{actor.actor_type}s.{actor.module_name}.{actor.actor_type}'),
             actor.name
         )
         config = ConnectorSpecification(
@@ -176,15 +171,17 @@ async def create_actor_instance(
 async def update_actor_instance(
     actor_instance_id: str,
     payload: ActorInstancePutRequest,
-    db = Depends(get_db)
+    db = Depends(get_db),
+    workspace_id: str = Query(..., description="The workspace ID to scope the request")
 ) -> ActorInstanceResponse:
     """
-    Update an existing actor instance after testing the connection.
+    Update an existing actor instance within a specific workspace after testing the connection.
 
     Args:
         actor_instance_id (str): The ID of the actor instance to update.
         payload (ActorInstancePutRequest): The updated data for the actor instance.
         db (Session): The database session.
+        workspace_id (str): The ID of the workspace to which the actor instance belongs.
 
     Returns:
         ActorInstanceResponse: The updated actor instance.
@@ -192,7 +189,10 @@ async def update_actor_instance(
     Raises:
         HTTPException: If the actor instance is not found, or if a validation error or exception occurs.
     """
-    actor_instance = db.query(ActorInstanceModel).get(actor_instance_id)
+    actor_instance = db.query(ActorInstanceModel).filter_by(
+        id=actor_instance_id, workspace_id=workspace_id  # Scope by workspace_id
+    ).first()
+
     if actor_instance is None:
         raise HTTPException(status_code=404, detail="Actor instance not found")
 
@@ -239,16 +239,34 @@ async def update_actor_instance(
         raise HTTPException(status_code=403, detail=str(e))
 
 
-@router.delete("/{actor_instance_id}",
-    responses={403: {"description": "Operation forbidden"}},
+@router.delete(
+    "/{actor_instance_id}",
+    responses={403: {"description": "Operation forbidden"},
+               404: {"description": "Actor instance not found"}}
 )
 async def delete_actor_instance(
     actor_instance_id: str,
-    db=Depends(get_db)
+    db=Depends(get_db),
+    workspace_id: str = Query(..., description="The workspace ID to scope the request")
 ) -> None:
-    actor_instance = db.query(ActorInstanceModel).get(actor_instance_id)
+    """
+    Delete an existing actor instance within a specific workspace.
+
+    Args:
+        actor_instance_id (str): The ID of the actor instance to delete.
+        db (Session): The database session.
+        workspace_id (str): The ID of the workspace to which the actor instance belongs.
+
+    Raises:
+        HTTPException: If the actor instance is not found or an exception occurs.
+    """
+    actor_instance = db.query(ActorInstanceModel).filter_by(
+        id=actor_instance_id, workspace_id=workspace_id  # Scope by workspace_id
+    ).first()
+
     if actor_instance is None:
         raise HTTPException(status_code=404, detail="Actor instance not found")
+
     try:
         db.delete(actor_instance)
         db.commit()
@@ -259,16 +277,35 @@ async def delete_actor_instance(
 @router.get("/{actor_instance_uuid}/discover")
 async def call_actor_instance_discover(
     actor_instance_uuid: str,
-    db=Depends(get_db)
+    db=Depends(get_db),
+    workspace_id: str = Query(..., description="The workspace ID to scope the request")
 ):
-    actor_instance = db.query(ActorInstanceModel).get(actor_instance_uuid)
+    """
+    Discover available data or schema for an actor instance within a specific workspace.
+
+    Args:
+        actor_instance_uuid (str): The UUID of the actor instance to discover.
+        db (Session): The database session.
+        workspace_id (str): The ID of the workspace to which the actor instance belongs.
+
+    Returns:
+        The discovered catalog or data schema for the actor instance.
+    """
+    actor_instance = db.query(ActorInstanceModel).filter_by(
+        id=actor_instance_uuid, workspace_id=workspace_id  # Scope by workspace_id
+    ).first()
+
+    if actor_instance is None:
+        raise HTTPException(status_code=404, detail="Actor instance not found")
+
     connector_specification = ConnectorSpecification(
         name=actor_instance.actor.name,
         module_name=actor_instance.actor.module_name,
         connection_specification=actor_instance.configuration,
     )
+
     SourceClass = getattr(
-        import_module(f'verified_{actor_instance.actor.actor_type}s.{actor_instance.actor.module_name}.{actor_instance.actor.actor_type}'), actor_instance.actor.name)
+        import_module(f'verified_{actor_instance.actor.actor_type}s.{actor_instance.actor.module_name}.{actor_instance.actor.actor_type}'),actor_instance.actor.name)
 
     catalog = SourceClass().discover(config=connector_specification)
     return catalog

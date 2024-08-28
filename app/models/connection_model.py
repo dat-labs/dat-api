@@ -23,7 +23,7 @@ class ConnectionBase(BaseModel):
     source_instance_id: str
     generator_instance_id: str
     destination_instance_id: str
-    workspace_id: str
+    # workspace_id: str
     name: str
     namespace_format: str = "${SOURCE_NAMESPACE}"
     prefix: Optional[str] = None
@@ -36,6 +36,7 @@ class ConnectionBase(BaseModel):
 
 class ConnectionResponse(ConnectionBase, ConnectionExtraAttributes):
     id: str
+    workspace_id: str
 
 class ConnectionPostRequest(ConnectionBase):
     pass
