@@ -7,7 +7,6 @@ ConnectorSpecificationConnectionSpec = Dict[str, Any]
 
 
 class ActorInstanceBase(BaseModel):
-    workspace_id: str
     actor_id: str
     user_id: str
     name: str
@@ -21,7 +20,6 @@ class ActorInstancePostRequest(ActorInstanceBase):
 
 
 class ActorInstancePutRequest(BaseModel):
-    workspace_id: Optional[str] = None
     actor_id: Optional[str] = None
     user_id: Optional[str] = None
     name: Optional[str] = None
@@ -32,5 +30,6 @@ class ActorInstancePutRequest(BaseModel):
 
 class ActorInstanceResponse(ActorInstanceBase):
     id: str
+    workspace_id: str
     actor: ActorResponse = None
     connected_connections: List[object] = []
