@@ -6,7 +6,7 @@ from .routers import (
     connections, actors,
     actor_instances, users,
     connection_run_logs, workspaces,
-    organizations,
+    organizations, workspace_users,
 )
 from .common.exceptions.exceptions import NotFound, Unauthorized
 # from pydantic import BaseModel
@@ -53,6 +53,7 @@ app.include_router(connection_run_logs.router)
 app.include_router(users.router)
 app.include_router(workspaces.router)
 app.include_router(organizations.router)
+app.include_router(workspace_users.router)
 app.include_router(
     admin.router,
     prefix="/admin",
