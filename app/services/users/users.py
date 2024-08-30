@@ -1,8 +1,8 @@
 import bcrypt
-from ...db_models.users import User as UserModel
-from ...db_models.workspace_users import WorkspaceUser
-from ...db_models.workspaces import Workspace
-from ...common.exceptions.exceptions import NotFound, Unauthorized
+from app.db_models.users import User as UserModel
+from app.db_models.workspace_users import WorkspaceUser
+from app.db_models.workspaces import Workspace
+from app.common.exceptions.exceptions import NotFound, Unauthorized
 from app.models.user_model import UserResponse
 
 class Users():
@@ -45,13 +45,16 @@ class Users():
                     workspace_id = None
 
                 if workspace_id:
-                    workspace_name = self.db_session.query(Workspace).filter(Workspace.id == workspace_id).first().name
+                    workspace = self.db_session.query(Workspace).filter(Workspace.id == workspace_id).first()
+                    workspace_name = workspace.name
+                    organization_id = workspace.organization_id
 
                 return {
                     "id": user.id,
                     "email": user.email,
                     "workspace_id": workspace_id,
                     "workspace_name": workspace_name,
+                    "organization_id": organization_id,
                     "created_at": user.created_at,
                     "updated_at": user.updated_at
                 }

@@ -1,7 +1,8 @@
 from fastapi import (
     APIRouter,
     Depends,
-    HTTPException
+    HTTPException,
+    Query
 )
 from app.db_models.workspaces import Workspace as WorkspaceModel
 from app.database import get_db
@@ -24,6 +25,7 @@ router = APIRouter(
     description="Fetch all available workspaces" 
 )
 async def fetch_available_workspaces(
+    org_id: str = Query(..., description="The ID of the organization"),
     db=Depends(get_db)
 ) -> list[WorkspaceResponse]:
     """
@@ -33,7 +35,7 @@ async def fetch_available_workspaces(
         A list of available workspaces.
     """
     try:
-        workspaces = db.query(WorkspaceModel).all()
+        workspaces = db.query(WorkspaceModel).filter_by(organization_id=org_id).all()
         return workspaces
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
