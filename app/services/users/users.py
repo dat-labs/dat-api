@@ -85,9 +85,8 @@ class Users():
         Returns:
         - dict: Dictionary containing user information.
         """
-        if not is_hashed(password):
-            password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        user = UserModel(email=email, password_hash=password)
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        user = UserModel(email=email, password_hash=hashed_password)
         self.db_session.add(user)
         self.db_session.commit()
         return UserResponse(
@@ -112,10 +111,9 @@ class Users():
         """
         user = self.db_session.query(UserModel).get(user_id)
         if user:
-            if not is_hashed(password):
-                password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
             user.email = email
-            user.password_hash = password
+            user.password_hash = hashed_password
             self.db_session.commit()
             return UserResponse(
                 id=user.id,
@@ -125,7 +123,3 @@ class Users():
                 updated_at=user.updated_at
             )
         raise NotFound("User Not Found")
-
-def is_hashed(password: str) -> bool:
-    """Check if the password is hashed."""
-    return password.startswith('$2b$') or password.startswith('$2a$') and len(password) == 60
