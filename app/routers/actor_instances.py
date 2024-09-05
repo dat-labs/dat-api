@@ -309,3 +309,40 @@ async def call_actor_instance_discover(
 
     catalog = SourceClass().discover(config=connector_specification)
     return catalog
+
+@router.get("/{actor_instance_id}/check")
+async def call_actor_instance_check(
+    actor_instance_id: str,
+    db=Depends(get_db),
+    workspace_id: str = Query(..., description="The workspace ID to scope the request")
+):
+    """
+    Check the connection for an actor instance within a specific workspace.
+
+    Args:
+        actor_instance_id (str): The ID of the actor instance to check.
+        db (Session): The database session.
+        workspace_id (str): The ID of the workspace to which the actor instance belongs.
+
+    Returns:
+        The connection status for the actor instance.
+    """
+    actor_instance = db.query(ActorInstanceModel).filter_by(
+        id=actor_instance_id, workspace_id=workspace_id  # Scope by workspace_id
+    ).first()
+
+    if actor_instance is None:
+        raise HTTPException(status_code=404, detail="Actor instance not found")
+
+    connector_specification = ConnectorSpecification(
+        name=actor_instance.actor.name,
+        module_name=actor_instance.actor.module_name,
+        connection_specification=actor_instance.configuration,
+    )
+
+    SourceClass = getattr(
+        import_module(f"verified_{actor_instance.actor.actor_type}s."
+                      f"{actor_instance.actor.module_name}.{actor_instance.actor.actor_type}"),actor_instance.actor.name)
+
+    check_connection_tpl = SourceClass().check(config=connector_specification)
+    return check_connection_tpl
