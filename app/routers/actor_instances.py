@@ -345,4 +345,7 @@ async def call_actor_instance_check(
                       f"{actor_instance.actor.module_name}.{actor_instance.actor.actor_type}"),actor_instance.actor.name)
 
     check_connection_tpl = SourceClass().check(config=connector_specification)
+    if check_connection_tpl.status.name != 'SUCCEEDED':
+        raise HTTPException(status_code=403, detail=check_connection_tpl.message)
+
     return check_connection_tpl
