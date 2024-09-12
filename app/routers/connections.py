@@ -1,6 +1,7 @@
 from importlib import import_module
 from celery import Celery
 import pydantic_core
+from typing import Optional
 from fastapi import (
     APIRouter,
     Depends,
@@ -36,7 +37,7 @@ router = APIRouter(
             description="Fetch all active connections")
 async def fetch_available_connections(
         db=Depends(get_db),
-        workspace_id: str = Query(..., description="The workspace ID to scope the request")
+        workspace_id: Optional[str] = Query(None, description="The workspace ID to scope the request")
 ) -> list[ConnectionResponse]:
     """
     Fetches all active connections from the database within a specific workspace,
@@ -50,18 +51,18 @@ async def fetch_available_connections(
         list[ConnectionResponse]: A list of active connections with related instances.
     """
     try:
-        connections = (
-            db.query(ConnectionModel)
-            .filter(ConnectionModel.status.in_(["active", "inactive"]),
-                    ConnectionModel.workspace_id == workspace_id)  # Scope by workspace_id
-            .options(
-                joinedload(ConnectionModel.source_instance),
-                joinedload(ConnectionModel.generator_instance),
-                joinedload(ConnectionModel.destination_instance)
-            )
-            .order_by(ConnectionModel.created_at.desc())
-            .all()
-        )
+        query = db.query(ConnectionModel).filter(
+            ConnectionModel.status.in_(["active", "inactive"]))
+
+        if workspace_id:
+            query = query.filter(ConnectionModel.workspace_id == workspace_id)
+
+        connections = query.options(
+            joinedload(ConnectionModel.source_instance),
+            joinedload(ConnectionModel.generator_instance),
+            joinedload(ConnectionModel.destination_instance)
+        ).order_by(ConnectionModel.created_at.desc()).all()
+
         return connections
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
