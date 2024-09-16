@@ -257,7 +257,7 @@ async def delete_connection(
              description="Trigger the run for the connection")
 async def connection_trigger_run(
     connection_id: str,
-    workspace_id: str = Query(..., description="The workspace ID to scope the request")
+    workspace_id: Optional[str] = Query(None, description="The workspace ID to scope the request")
 ) -> ConnectionOrchestraResponse:
     """
     Triggers a run for the specified connection within a specific workspace.
@@ -272,7 +272,7 @@ async def connection_trigger_run(
     Raises:
         HTTPException: If the connection is not found or an error occurs.
     """
-    resp = await fetch_connection_config(connection_id, workspace_id)
+    resp = await fetch_connection_config(connection_id)
     app.send_task('dat_worker_task', (resp.model_dump_json(), ), queue='dat-worker-q')
     return resp.model_dump()
 

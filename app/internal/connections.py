@@ -18,18 +18,16 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-async def get_connection_orchestra_response(connection_id: str, workspace_id: str) -> ConnectionOrchestraResponse:
+async def get_connection_orchestra_response(connection_id: str) -> ConnectionOrchestraResponse:
     db_session = list(get_db())[0]
 
-    # Fetch the connection and scope it by workspace_id
-    connection = db_session.query(ConnectionModel).filter_by(id=connection_id, workspace_id=workspace_id).one_or_none()
+    connection = db_session.query(ConnectionModel).filter_by(id=connection_id).one_or_none()
     if connection is None:
         raise HTTPException(status_code=404, detail="Connection not found")
 
-    # Fetch related instances and scope them by workspace_id
-    _source = db_session.query(ActorInstanceModel).filter_by(id=connection.source_instance_id, workspace_id=workspace_id).one_or_none()
-    _generator = db_session.query(ActorInstanceModel).filter_by(id=connection.generator_instance_id, workspace_id=workspace_id).one_or_none()
-    _destination = db_session.query(ActorInstanceModel).filter_by(id=connection.destination_instance_id, workspace_id=workspace_id).one_or_none()
+    _source = db_session.query(ActorInstanceModel).filter_by(id=connection.source_instance_id).one_or_none()
+    _generator = db_session.query(ActorInstanceModel).filter_by(id=connection.generator_instance_id).one_or_none()
+    _destination = db_session.query(ActorInstanceModel).filter_by(id=connection.destination_instance_id).one_or_none()
 
     if not _source or not _generator or not _destination:
         raise HTTPException(status_code=404, detail="One or more related instances not found")
@@ -68,9 +66,8 @@ async def get_connection_orchestra_response(connection_id: str, workspace_id: st
             description="Fetch connection configuration for orchestra")
 async def fetch_connection_config(
     connection_id: str = Path(..., description="The ID of the connection to fetch"),
-    workspace_id: str = Query(..., description="The workspace ID of the connection"),
 ) -> ConnectionOrchestraResponse:
     try:
-        return await get_connection_orchestra_response(connection_id, workspace_id)
+        return await get_connection_orchestra_response(connection_id)
     except Exception as e:
         raise APIError(status_code=500, message=str(e))
