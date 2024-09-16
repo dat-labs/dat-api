@@ -45,7 +45,6 @@ async def add_connection_run_log(
     connection_id: str,
     dat_message: DatMessage,
     run_id: str,
-    workspace_id: str = Query(..., description="The workspace ID for scoping the connection"),
     db=Depends(get_db)
 ) -> ConnectionRunLogResponse:
     """
@@ -53,7 +52,6 @@ async def add_connection_run_log(
 
     Args:
         connection_id (str): The ID of the connection for which the log is being added.
-        workspace_id (str): The ID of the workspace for scoping the connection.
         dat_message (DatMessage): The DatMessage object containing the log information.
         run_id (str): The ID of the run for which the log is being added.
 
@@ -62,7 +60,7 @@ async def add_connection_run_log(
     """
     try:
         # Ensure the connection belongs to the correct workspace
-        connection = db.query(ConnectionModel).filter_by(id=connection_id, workspace_id=workspace_id).one_or_none()
+        connection = db.query(ConnectionModel).filter_by(id=connection_id).one_or_none()
         if connection is None:
             raise HTTPException(status_code=404, detail="Connection not found")
 
