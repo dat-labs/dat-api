@@ -265,7 +265,7 @@ def get_int_from_list(run_logs: List) -> int:
     for run_log in run_logs:
         try:
             rec_upd8d += json.loads(json.loads(run_log.message).get('message', '{}')).get('n_docs_processed', 0)
-        except json.decoder.JSONDecodeError:
+        except (json.decoder.JSONDecodeError, AttributeError):
             pass
     return rec_upd8d
 
