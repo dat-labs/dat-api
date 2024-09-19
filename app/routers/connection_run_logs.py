@@ -13,7 +13,7 @@ Functions:
 """
 import json
 from datetime import datetime
-from typing import List, Dict
+from typing import List, Dict, Optional
 import pydantic_core
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.exc import StatementError
@@ -148,13 +148,13 @@ async def get_connection_runs_by_run_id(
             description="Get the latest stream states for a connection")
 async def get_combined_stream_states(
     connection_id: str,
-    workspace_id: str = Query(..., description="The workspace ID for scoping the connection"),
+    workspace_id: Optional[str] = Query(None, description="The workspace ID for scoping the connection"),
     db=Depends(get_db)
 ) -> Dict[str, StreamState]:
     combined_states = {}
     try:
         # Ensure the connection belongs to the correct workspace
-        connection = db.query(ConnectionModel).filter_by(id=connection_id, workspace_id=workspace_id).one_or_none()
+        connection = db.query(ConnectionModel).filter_by(id=connection_id).one_or_none()
         if connection is None:
             raise HTTPException(status_code=404, detail="Connection not found")
 
