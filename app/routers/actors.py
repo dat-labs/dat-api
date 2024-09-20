@@ -258,34 +258,32 @@ async def get_actor_documentaion(
         str: The documentation for the actor.
     """
     print(f"Fetching documentation for path {path}")
-    page_id = _get_page_id_by_path(path)
+    top_path = path.split('/')[0]
+    page_id = _get_page_id_by_path(top_path, path)
 
     return _get_content_by_id(page_id)
 
-def _get_page_id_by_path(page_path: str) -> str:
-    top_path = "integrations"
+def _get_page_id_by_path(top_path: str, page_path: str) -> str:
     url = f"https://dat-serve-gitbook.riju.tech/v1/spaces/{GITBOOK_SPACE_ID}/content/path/{top_path}"
 
-    # combine top path with the provided path
-    combined_path = f"{top_path}/{page_path}"
-    print(f"Fetching page ID for path {combined_path}")
+    print(f"Fetching page ID for path {page_path}")
     response = requests.request("GET", url)
 
     if response.status_code != 200:
         raise HTTPException(status_code=404, detail="Content not found")
 
     page_path_parts = page_path.split('/')
-    actor_type = page_path_parts[0]
-    actor_name = page_path_parts[1]
+    page = page_path_parts[1]
+    sub_page = page_path_parts[2]
 
     for item in response.json().get('pages', []):
-        if item.get('slug') == actor_type:
+        if item.get('slug') == page:
             for sub_item in item.get('pages', []):
-                if sub_item.get('slug') == actor_name and sub_item.get('path') == combined_path:
+                if sub_item.get('slug') == sub_page and sub_item.get('path') == page_path:
                     return sub_item.get('id')
-                elif sub_item.get('slug') == actor_name:
+                elif sub_item.get('slug') == sub_page:
                     for sub_sub_item in sub_item.get('pages', []):
-                        if sub_sub_item.get('path') == combined_path:
+                        if sub_sub_item.get('path') == page_path:
                             return sub_sub_item.get('id')
 
 def _get_content_by_id(page_id: str) -> str:
