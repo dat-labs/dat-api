@@ -109,7 +109,7 @@ class Users():
         Returns:
         - dict: Dictionary containing updated user information.
         """
-        user = self.db_session.query(UserModel).get(user_id)
+        user = self.db_session.query(UserModel).filter(UserModel.id == user_id).first()
         if user:
             hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
             user.email = email
