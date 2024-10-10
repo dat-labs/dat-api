@@ -1,22 +1,30 @@
+import os
 from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
-    Query
+    Query, UploadFile, File
 )
 from importlib import import_module
 from typing import List, Optional
+from pydantic import ValidationError
+from minio import Minio
+from minio.error import S3Error
+from tempfile import NamedTemporaryFile
 from dat_core.pydantic_models.connector_specification import ConnectorSpecification
 from app.db_models.actors import Actor as ActorModel
 from app.db_models.actor_instances import ActorInstance as ActorInstanceModel
 from app.db_models.connections import Connection as ConnectionModel
-from pydantic import ValidationError
 from app.database import get_db
 from app.models.actor_instance_model import (
     ActorInstanceResponse, ActorInstancePostRequest,
-    ActorInstancePutRequest,
+    ActorInstancePutRequest, UploadResponse
 )
 
+MINIO_BUCKET_NAME = os.getenv("MINIO_BUCKET_NAME")
+MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT")
+MINIO_ROOT_USER = os.getenv("MINIO_ROOT_USER")
+MINIO_ROOT_PASSWORD = os.getenv("MINIO_ROOT_PASSWORD")
 
 router = APIRouter(
     prefix="/actor_instances",
@@ -68,7 +76,7 @@ async def fetch_available_actor_instances(
     Args:
         actor_type: The type of actor to fetch.
         workspace_id: The ID of the workspace.
-    
+
     Returns:
         A list of active actors with related instances.
     """
@@ -122,7 +130,7 @@ async def create_actor_instance(
         payload (ActorInstancePostRequest): The data for the actor instance.
         workspace_id (str): The ID of the workspace.
         db (Session): The database session.
-    
+
     Returns:
         ActorInstanceResponse: The created actor instance.
     """
@@ -349,3 +357,47 @@ async def call_actor_instance_check(
         raise HTTPException(status_code=403, detail=check_connection_tpl.message)
 
     return check_connection_tpl
+
+
+@router.post("/upload/", response_model=UploadResponse)
+async def upload_file_to_minio(file: UploadFile = File(...), target_path: str = None):
+    """
+    Upload a file from a HTTP upload to MinIO.
+    """
+    try:
+        minio_client = Minio(
+            MINIO_ENDPOINT,
+            access_key=MINIO_ROOT_USER,
+            secret_key=MINIO_ROOT_PASSWORD,
+            secure=False
+        )
+        with NamedTemporaryFile(delete=False) as temp_file:
+            # Write the uploaded file's content to the temp file
+            content = await file.read()
+            temp_file.write(content)
+            temp_file.flush()
+
+            temp_file_path = temp_file.name
+
+        minio_client.fput_object(
+            MINIO_BUCKET_NAME,
+            target_path or file.filename,
+            temp_file_path
+        )
+
+
+        return UploadResponse(
+            bucket_name=MINIO_BUCKET_NAME,
+            uploaded_path=target_path or file.filename,
+            message=f"File uploaded successfully to {target_path or file.filename} in bucket {MINIO_BUCKET_NAME}"
+        )
+
+    except S3Error as e:
+        raise HTTPException(status_code=500, detail=f"MinIO upload failed: {e}")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {e}")
+
+    finally:
+        if temp_file_path and os.path.exists(temp_file_path):
+            os.remove(temp_file_path)

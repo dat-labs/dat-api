@@ -20,6 +20,8 @@ sqlalchemy = "^2.0.28"
 psycopg2-binary = "^2.9.9"
 uvicorn = {extras = ["standard"], version = "^0.29.0"}
 python-dotenv = "^1.0.1"
+minio = "^7.2.9"
+python-multipart = "^0.0.12"
 
 
 [build-system]

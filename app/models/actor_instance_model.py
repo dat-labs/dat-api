@@ -33,3 +33,8 @@ class ActorInstanceResponse(ActorInstanceBase):
     workspace_id: str
     actor: ActorResponse = None
     connected_connections: List[object] = []
+
+class UploadResponse(BaseModel):
+    bucket_name: str
+    uploaded_path: str
+    message: str
