@@ -371,6 +371,10 @@ async def upload_file_to_minio(file: UploadFile = File(...), target_path: str = 
             secret_key=MINIO_ROOT_PASSWORD,
             secure=False
         )
+        # Check if the bucket exists, if not, create it
+        if not minio_client.bucket_exists(MINIO_BUCKET_NAME):
+            minio_client.make_bucket(MINIO_BUCKET_NAME)
+
         with NamedTemporaryFile(delete=False) as temp_file:
             # Write the uploaded file's content to the temp file
             content = await file.read()
@@ -384,7 +388,6 @@ async def upload_file_to_minio(file: UploadFile = File(...), target_path: str = 
             target_path or file.filename,
             temp_file_path
         )
-
 
         return UploadResponse(
             bucket_name=MINIO_BUCKET_NAME,
