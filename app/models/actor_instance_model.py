@@ -36,5 +36,5 @@ class ActorInstanceResponse(ActorInstanceBase):
 
 class UploadResponse(BaseModel):
     bucket_name: str
-    uploaded_path: str
+    uploaded_files: List[str]
     message: str

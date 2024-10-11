@@ -360,10 +360,11 @@ async def call_actor_instance_check(
 
 
 @router.post("/upload/", response_model=UploadResponse)
-async def upload_file_to_minio(file: UploadFile = File(...), target_path: str = None):
+async def upload_file_to_minio(files: List[UploadFile] = File(...), target_path: str = None):
     """
     Upload a file from a HTTP upload to MinIO.
     """
+    uploaded_files = []
     try:
         minio_client = Minio(
             MINIO_ENDPOINT,
@@ -371,28 +372,34 @@ async def upload_file_to_minio(file: UploadFile = File(...), target_path: str = 
             secret_key=MINIO_ROOT_PASSWORD,
             secure=False
         )
-        # Check if the bucket exists, if not, create it
         if not minio_client.bucket_exists(MINIO_BUCKET_NAME):
             minio_client.make_bucket(MINIO_BUCKET_NAME)
 
-        with NamedTemporaryFile(delete=False) as temp_file:
-            # Write the uploaded file's content to the temp file
-            content = await file.read()
-            temp_file.write(content)
-            temp_file.flush()
+        for file in files:
+            with NamedTemporaryFile(delete=False) as temp_file:
+                content = await file.read()
+                temp_file.write(content)
+                temp_file.flush()  # Ensure all data is written
 
-            temp_file_path = temp_file.name
+                temp_file_path = temp_file.name
 
-        minio_client.fput_object(
-            MINIO_BUCKET_NAME,
-            target_path or file.filename,
-            temp_file_path
-        )
+            file_target_path = f"{target_path}/{file.filename}" if target_path else file.filename
+
+            minio_client.fput_object(
+                MINIO_BUCKET_NAME,
+                file_target_path,
+                temp_file_path
+            )
+
+            uploaded_files.append(file_target_path)
+
+            if temp_file_path and os.path.exists(temp_file_path):
+                os.remove(temp_file_path)
 
         return UploadResponse(
             bucket_name=MINIO_BUCKET_NAME,
-            uploaded_path=target_path or file.filename,
-            message=f"File uploaded successfully to {target_path or file.filename} in bucket {MINIO_BUCKET_NAME}"
+            uploaded_files=uploaded_files,
+            message="Files uploaded successfully"
         )
 
     except S3Error as e:
@@ -400,7 +407,3 @@ async def upload_file_to_minio(file: UploadFile = File(...), target_path: str = 
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {e}")
-
-    finally:
-        if temp_file_path and os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
