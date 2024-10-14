@@ -365,6 +365,8 @@ async def upload_file_to_minio(files: List[UploadFile] = File(...), target_path:
     Upload a file from a HTTP upload to MinIO.
     """
     uploaded_files = []
+    local_file_names = []
+
     try:
         minio_client = Minio(
             MINIO_ENDPOINT,
@@ -383,6 +385,7 @@ async def upload_file_to_minio(files: List[UploadFile] = File(...), target_path:
 
                 temp_file_path = temp_file.name
 
+            local_file_names.append(file.filename)
             file_target_path = f"{target_path}/{file.filename}" if target_path else file.filename
 
             minio_client.fput_object(
@@ -399,6 +402,7 @@ async def upload_file_to_minio(files: List[UploadFile] = File(...), target_path:
         return UploadResponse(
             bucket_name=MINIO_BUCKET_NAME,
             uploaded_files=uploaded_files,
+            local_file_names=local_file_names,
             message="Files uploaded successfully"
         )
 
