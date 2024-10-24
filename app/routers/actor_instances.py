@@ -5,13 +5,11 @@ from fastapi import (
     HTTPException,
     Query, UploadFile, File
 )
-from importlib import import_module
-from typing import List, Optional
+from typing import List
 from pydantic import ValidationError
 from minio import Minio
 from minio.error import S3Error
 from tempfile import NamedTemporaryFile
-from dat_core.pydantic_models.connector_specification import ConnectorSpecification
 from app.db_models.actors import Actor as ActorModel
 from app.db_models.actor_instances import ActorInstance as ActorInstanceModel
 from app.db_models.connections import Connection as ConnectionModel
@@ -20,6 +18,8 @@ from app.models.actor_instance_model import (
     ActorInstanceResponse, ActorInstancePostRequest,
     ActorInstancePutRequest, UploadResponse
 )
+from app.common.builder import ConnectorSpecificationBuilder
+
 
 MINIO_BUCKET_NAME = os.getenv("MINIO_BUCKET_NAME")
 MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT")
@@ -143,12 +143,18 @@ async def create_actor_instance(
         if actor is None:
             raise HTTPException(status_code=404, detail="Actor not found")
 
-        SourceClass = getattr(
-            import_module(
-                f'verified_{actor.actor_type}s.{actor.module_name}.{actor.actor_type}'),
-            actor.name
+        SourceClass = ConnectorSpecificationBuilder.get_source_class(
+            actor_type=actor.actor_type,
+            module_name=actor.module_name,
+            actor_name=actor.name
         )
-        config = ConnectorSpecification(
+
+        SpecClass = ConnectorSpecificationBuilder.get_specification(
+            actor_type=actor.actor_type,
+            module_name=actor.module_name,
+            actor_name=actor.name
+        )
+        config = SpecClass(
             name=actor.name,
             module_name=actor.module_name,
             connection_specification=db_actor_instance.configuration
@@ -214,11 +220,18 @@ async def update_actor_instance(
         if actor is None:
             raise HTTPException(status_code=404, detail="Actor not found")
 
-        SourceClass = getattr(
-            import_module(f'verified_{actor.actor_type}s.{actor.module_name}.{actor.actor_type}'),
-            actor.name
+        SourceClass = ConnectorSpecificationBuilder.get_source_class(
+            actor_type=actor.actor_type,
+            module_name=actor.module_name,
+            actor_name=actor.name
         )
-        config = ConnectorSpecification(
+
+        SpecClass = ConnectorSpecificationBuilder.get_specification(
+            actor_type=actor.actor_type,
+            module_name=actor.module_name,
+            actor_name=actor.name
+        )
+        config = SpecClass(
             name=actor.name,
             module_name=actor.module_name,
             connection_specification=actor_instance.configuration
@@ -306,16 +319,24 @@ async def call_actor_instance_discover(
     if actor_instance is None:
         raise HTTPException(status_code=404, detail="Actor instance not found")
 
-    connector_specification = ConnectorSpecification(
-        name=actor_instance.actor.name,
+    SourceClass = ConnectorSpecificationBuilder.get_source_class(
+        actor_type=actor_instance.actor.actor_type,
         module_name=actor_instance.actor.module_name,
-        connection_specification=actor_instance.configuration,
+        actor_name=actor_instance.actor.name
     )
 
-    SourceClass = getattr(
-        import_module(f'verified_{actor_instance.actor.actor_type}s.{actor_instance.actor.module_name}.{actor_instance.actor.actor_type}'),actor_instance.actor.name)
+    SpecClass = ConnectorSpecificationBuilder.get_specification(
+        actor_type=actor_instance.actor.actor_type,
+        module_name=actor_instance.actor.module_name,
+        actor_name=actor_instance.actor.name
+    )
+    config = SpecClass(
+        name=actor_instance.actor.name,
+        module_name=actor_instance.actor.module_name,
+        connection_specification=actor_instance.configuration
+    )
 
-    catalog = SourceClass().discover(config=connector_specification)
+    catalog = SourceClass().discover(config=config)
     return catalog
 
 @router.get("/{actor_instance_id}/check")
@@ -342,17 +363,24 @@ async def call_actor_instance_check(
     if actor_instance is None:
         raise HTTPException(status_code=404, detail="Actor instance not found")
 
-    connector_specification = ConnectorSpecification(
-        name=actor_instance.actor.name,
+    SourceClass = ConnectorSpecificationBuilder.get_source_class(
+        actor_type=actor_instance.actor.actor_type,
         module_name=actor_instance.actor.module_name,
-        connection_specification=actor_instance.configuration,
+        actor_name=actor_instance.actor.name
     )
 
-    SourceClass = getattr(
-        import_module(f"verified_{actor_instance.actor.actor_type}s."
-                      f"{actor_instance.actor.module_name}.{actor_instance.actor.actor_type}"),actor_instance.actor.name)
+    SpecClass = ConnectorSpecificationBuilder.get_specification(
+        actor_type=actor_instance.actor.actor_type,
+        module_name=actor_instance.actor.module_name,
+        actor_name=actor_instance.actor.name
+    )
+    config = SpecClass(
+        name=actor_instance.actor.name,
+        module_name=actor_instance.actor.module_name,
+        connection_specification=actor_instance.configuration
+    )
 
-    check_connection_tpl = SourceClass().check(config=connector_specification)
+    check_connection_tpl = SourceClass().check(config=config)
     if check_connection_tpl.status.name != 'SUCCEEDED':
         raise HTTPException(status_code=403, detail=check_connection_tpl.message)
 
